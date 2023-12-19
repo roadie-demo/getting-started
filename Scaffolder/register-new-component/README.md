@@ -38,8 +38,8 @@ Repo Host Example:
 ## TODO's
 
 ### GitHub Proxy
-- [ ] Navigate to `Settings > Developer Settings > Personal access tokens > Tokens (classic)`. Press **Generate new token Classic**.
-- [ ] Navigate to `Administration > Settings > Roadie Settings | Secrets`. Press the pencil icon to edit the `GITHUB_TOKEN` and enter the generated token.
+- [ ] In GitHub, navigate to `Settings > Developer Settings > Personal access tokens > Tokens (classic)`. Press **Generate new token Classic**.
+- [ ] In Roadie, navigate to `Administration > Settings > Roadie Settings | Secrets`. Press the pencil icon to edit the `GITHUB_TOKEN` and enter the generated token.
 
 ### Template Details
 - [ ] `Spec > Owner`: Set the owner, most commonly the same person/group who owns the 
