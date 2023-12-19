@@ -56,13 +56,17 @@ spec:
           type: string
           default: github.com
           ui:widget: hidden
-        repoOrg:
-          type: string
-          default: roadieHQ # TODO: Add the name of your GitHub org
-          ui:widget: hidden
+
         repoSlug:
-          title: Repository Name
           type: string
+          ui:field: SelectFieldFromApi
+          ui:options:
+            title: Repository
+            description: Choose the repository to be registered in your catalog.
+            path: "proxy/github/api/orgs/roadieHQ/repos" # TODO: Add the name of your GitHub org. e.g. `/orgs/{reporOrg}/repos`
+            valueSelector: "full_name"
+            labelSelector: "name"
+
         entityTags:
           type: array
           ui:field: EntityTagsPicker
@@ -72,13 +76,11 @@ spec:
         argoAppName:
           title: Argo CD App Name
           type: string
+
         pagerdutyServiceId:
           title: PagerDuty Service ID
           type: string
 
-    - title: TechDocs (optional) # Title of the fourth step.
-      type: object
-      properties: #TODO: Specify any additional integrations associated with your repos.
         ensableTechDocs:
           title: Enable TechDocs
           default: true
@@ -92,23 +94,28 @@ spec:
         - ensableTechDocs
       then:
         properties:
-          techDocsBody:
-            title: Body
-            ui:widget: textarea
-            ui:options:
-              rows: 10
-            ui:help: 'This will be your TechDocs initial body. You can change it any time in Roadie Backstage.'
-            ui:placeholder: |
-              This is a placeholder TechDocs page. Please update me to enable Techdocs, or leave blank for placeholder text.
-            type: string
           techDocsPath:
             title: Path
             description: 'The path to the TechDocs directory. This can be a directory in the repository using docs:.; or linked externally using url:{url}.'
             type: string
             default: 'docs:.'
-  
+
   # These are the steps that are executed in series in the scaffolder backend.
   steps:
+    - id: parse-repo-values
+      name: Parse Repo Org and Slug from selected value.
+      action: roadiehq:utils:jsonata
+      input:
+        data:
+          item: ${{ parameters.repoSlug }}
+        expression: "(
+                        $Org := $substringBefore($.item, '/');
+                        $Name := $substringAfter($.item, '/');
+                        {
+                          'gitHubOrg': $Org,
+                          'repoName': $Name
+                        }
+                      )"
     - id: fetchCatalogTemplate
       action: fetch:template
       input:
@@ -119,7 +126,6 @@ spec:
           description: ${{ parameters.description }}
           owner: ${{ parameters.owner }}
           type: ${{ parameters.type }}
-          repoOrg: ${{ parameters.repoOrg }}
           repoSlug: ${{ parameters.repoSlug }}
           argoAppName: ${{ parameters.argoAppName }}
           pagerdutyServiceId: ${{ parameters.pagerdutyServiceId }}
@@ -133,7 +139,6 @@ spec:
         url: ./techDocs
         templateFileExtension: .njk
         values:
-          repoOrg: ${{ parameters.repoOrg }}
           repoSlug: ${{ parameters.repoSlug }}
           techDocsBody: ${{ parameters.techDocsBody }}
 
@@ -141,7 +146,7 @@ spec:
       name: createPullRequest
       action: publish:github:pull-request
       input:
-        repoUrl: ${{ parameters.repoHost }}?owner=${{ parameters.repoOrg }}&repo=${{ parameters.repoSlug }}
+        repoUrl: ${{ parameters.repoHost }}?owner=${{ steps['parse-repo-values'].output.result.gitHubOrg }}&repo=${{ steps['parse-repo-values'].output.result.repoName }}
         branchName: register-to-catalog-${{ '' | now }}
         title: Register software to Catalog
         description: This PR adds a metadata file about this catalog entity so that it can be registered in our software catalog, with optional integrations and TechDocs.

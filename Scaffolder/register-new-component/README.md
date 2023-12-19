@@ -9,8 +9,7 @@ The template allows for quickly and efficiently registering a repository to the 
    - Description: This should be used to provided detailed information in the catalog list.
 2. Collect component location:
    - Repo Host: Hardcoded and hidden, this is used in building the pull request. Alternatively, you may expose this as a select list [example below].
-   - Repo Org: Hardcoded and hidden, this is used in building the pull request.
-   - Repo Name: The name of the repository to be registered in Roadie Backstage.
+   - Repo Name: The name of the repository to be registered in Roadie Backstage. The list is populated through the Roadie GitHub Proxy and requires a GitHub classic API Token to be configured in your Roadie Secrets.
 3. Collect integrations configuration data:
    - Set the integration specific information, such as App Names or Service Id's.
 4. Configure TechDocs:
@@ -37,6 +36,10 @@ Repo Host Example:
      - `/docs/index.md`: The index page for the repositories TechDocs.
 
 ## TODO's
+
+### GitHub Proxy
+- [ ] In GitHub, navigate to `Settings > Developer Settings > Personal access tokens > Tokens (classic)`. Press **Generate new token Classic**.
+- [ ] In Roadie, navigate to `Administration > Settings > Roadie Settings | Secrets`. Press the pencil icon to edit the `GITHUB_TOKEN` and enter the generated token.
 
 ### Template Details
 - [ ] `Spec > Owner`: Set the owner, most commonly the same person/group who owns the 
