@@ -40,7 +40,7 @@ Repo Host Example:
 - [ ] In Roadie, navigate to `Administration > Settings > Roadie Settings | Secrets`. Press the pencil icon to edit the `GITHUB_TOKEN` and enter the generated token.
 
 ### Template Details
-- [ ] `Spec > Owner`: Set the owner, most commonly the same person/group who owns the 
+- [ ] `Spec > Owner`: Set the owner, most commonly the same person/group who owns the template.
 
 ### Component Details
 Roadie Relationship.

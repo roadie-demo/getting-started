@@ -17,4 +17,8 @@ The template allows for quickly and efficiently adding the TechDocs plugin to an
 
 ## TODO's
 
+### General
 - [ ] Determine log level verboseness desired, and remove unwanted log steps.
+
+### Template Details
+- [ ] `Spec > Owner`: Set the owner, most commonly the same person/group who owns the template.
