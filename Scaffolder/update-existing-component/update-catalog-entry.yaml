@@ -1,0 +1,238 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: update-catalog-entry
+  title: Update existing catalog-info.yaml file of a previously registered component
+  description: "Create a new PR with an updated catalog-info.yaml file."
+spec:
+  owner: unspecified # TODO: Define who the owner of this template is. This is likely the team who own the relationship with Roadie. e.g. group:customer-name/platform
+  type: service
+
+  # These are the steps which are rendered in the frontend with the form input.
+  parameters:
+    - title: Select an Entity
+      required:
+        - entity
+      properties:
+        entity:
+          type: string
+          ui:field: EntityPicker
+    - title: Spec Section Information
+      properties:
+        specType:
+          title: Component Type
+          description: 
+          type: string
+          enum: ['service', 'website', 'test', 'documentation', 'library'] # TODO: What are the types you have?
+        specOwner:
+          title: Component Owner
+          type: string
+          description: Owner of the component
+          ui:field: OwnerPicker
+          ui:options:
+            catalogFilter:
+              kind: ['Group', 'Owner']
+        specLifecycle:
+          title: Component Lifecycle
+          description: 
+          type: string
+          enum: ['production', 'experimental', 'deprecated'] # TODO: What are the lifecycle environments you have?
+        specSystem:
+          title: Component System
+          description: 
+          type: string
+    - title: Metadata Section Information
+      properties:
+        componentName: 
+          title: Component Name
+          description: The name of the component in Roadie Backstage, typically the same name used in the repository. This will be used to create a human readable title.
+          type: string
+        componentTitle:
+          title: Component Title
+          description: The human readable title of the component in Roadie Backstage.
+          type: string
+        componentDescription:
+          title: Component Description
+          description: A Detailed decription allows for the component to be easily found and understood in Roadie Backstage.
+          type: string
+
+  # These are the steps that are executed in series in the scaffolder backend.
+  steps:
+    - id: backstage_request
+      name: Retrieve Entity information from Roadie
+      action: http:backstage:request
+      input:
+        method: 'GET'
+        path: "/catalog/entities/by-name/${{ parameters.entity | replace(':', '/') }}"
+    - id: log-result
+      action: debug:log
+      name: Log identified manifest location
+      input:
+        message: "Retrieving catalog manifest from ${{ steps['backstage_request'].output.body.metadata.annotations['backstage.io/managed-by-origin-location'] }}"
+    - id: fetch-catalog-manifest
+      name: Fetch Catalog manifest file
+      action: fetch:plain
+      input:
+        url: "${{ steps['backstage_request'].output.body.metadata.annotations['backstage.io/managed-by-origin-location'] | replace('url:', '') | replace('catalog-info.yaml', '') }}"
+        targetPath: 'fetch-folder'
+    - id: move-manifest-to-workbench
+      name: Move manifest file to a standalone location
+      action: fs:rename
+      input:
+        files:
+          - from: 'fetch-folder/catalog-info.yaml'
+            to: './manifest-folder/catalog-info.yaml'
+    - id: parse-catalog-manifest
+      name: Parse retrieved catalog manifest file
+      action: roadiehq:utils:fs:parse
+      input:
+        path: './manifest-folder/catalog-info.yaml'
+    - id: log-result
+      name: Display current catalog manifest
+      action: debug:log
+      input:
+        message: 'Catalog Manifest content: ${{ steps["parse-catalog-manifest"].output.content }}'
+    - id: identify-repo-and-owner
+      name: Identify repository and owner
+      action: roadiehq:utils:jsonata
+      input:
+        data: "${{ steps['backstage_request'].output.body }}"
+        expression: '$.metadata.annotations.(
+                      $slug := $substringAfter($."backstage.io/managed-by-location", "url:https://github.com/");
+                      $owner := $substringBefore($slug, "/");
+                      {
+                          "slug": $slug,
+                          "owner": $owner,
+                          "repo": $substringBefore($substringAfter($slug & $owner & "/", "/"), "/")
+                      }
+                    )'
+    - id: log-result
+      name: Display retrieved params
+      action: debug:log
+      input:
+        message: 'Creating a PR to repo ${{ steps["identify-repo-and-owner"].output.result.repo }} owned by ${{ steps["identify-repo-and-owner"].output.result.owner }}'
+    - id: update-spec-type
+      name: Update Spec Type
+      if: ${{ parameters.specType != null }}
+      action: roadiehq:utils:jsonata:yaml:transform 
+      input:
+        path: './manifest-folder/catalog-info.yaml'
+        expression: '$ ~> | $.spec | { "type": "${{ parameters.specType }}" } |' 
+    - id: write-spec-type-to-file
+      name: Overwrite the existing type with new contents
+      if: ${{ parameters.specType != null }}
+      action: roadiehq:utils:fs:write
+      input:
+        path: './manifest-folder/catalog-info.yaml'
+        content: ${{ steps["update-spec-type"].output.result }}
+    - id: update-spec-owner
+      name: Update Spec Owner
+      if: ${{ parameters.specOwner != null }}
+      action: roadiehq:utils:jsonata:yaml:transform 
+      input:
+        path: './manifest-folder/catalog-info.yaml'
+        expression: '$ ~> | $.spec | { "owner": "${{ parameters.specOwner }}" } |' 
+    - id: write-spec-owner-to-file
+      name: Overwrite the existing owner with new contents
+      if: ${{ parameters.specOwner != null }}
+      action: roadiehq:utils:fs:write
+      input:
+        path: './manifest-folder/catalog-info.yaml'
+        content: ${{ steps["update-spec-owner"].output.result }}
+    - id: update-spec-lifecycle
+      name: Update Spec Lifecycle
+      if: ${{ parameters.specLifecycle != null }}
+      action: roadiehq:utils:jsonata:yaml:transform 
+      input:
+        path: './manifest-folder/catalog-info.yaml'
+        expression: '$ ~> | $.spec | { "lifecycle": "${{ parameters.specLifecycle }}" } |' 
+    - id: write-spec-lifecycle-to-file
+      name: Overwrite the existing lifecycle with new contents
+      if: ${{ parameters.specLifecycle != null }}
+      action: roadiehq:utils:fs:write
+      input:
+        path: './manifest-folder/catalog-info.yaml'
+        content: ${{ steps["update-spec-lifecycle"].output.result }}
+    - id: update-spec-system
+      name: Update Spec System
+      if: ${{ parameters.specSystem != null }}
+      action: roadiehq:utils:jsonata:yaml:transform 
+      input:
+        path: './manifest-folder/catalog-info.yaml'
+        expression: '$ ~> | $.spec | { "system": "${{ parameters.specSystem }}" } |' 
+    - id: write-spec-system-to-file
+      name: Overwrite the existing system with new contents
+      if: ${{ parameters.specSystem != null }}
+      action: roadiehq:utils:fs:write
+      input:
+        path: './manifest-folder/catalog-info.yaml'
+        content: ${{ steps["update-spec-system"].output.result }}
+    - id: update-metadata-name
+      name: Update Component Name
+      if: ${{ parameters.componentName != null }}
+      action: roadiehq:utils:jsonata:yaml:transform 
+      input:
+        path: './manifest-folder/catalog-info.yaml'
+        expression: '$ ~> | $.metadata | { "name": "${{ parameters.componentName }}" } |' 
+    - id: write-metadata-name-to-file
+      name: Overwrite the existing name with new contents
+      if: ${{ parameters.componentName != null }}
+      action: roadiehq:utils:fs:write
+      input:
+        path: './manifest-folder/catalog-info.yaml'
+        content: ${{ steps["update-metadata-name"].output.result }}
+    - id: update-metadata-title
+      name: Update Component Title
+      if: ${{ parameters.componentTitle != null }}
+      action: roadiehq:utils:jsonata:yaml:transform 
+      input:
+        path: './manifest-folder/catalog-info.yaml'
+        expression: '$ ~> | $.metadata | { "title": "${{ parameters.componentTitle }}" } |' 
+    - id: write-metadata-title-to-file
+      name: Overwrite the existing title with new contents
+      if: ${{ parameters.componentTitle != null }}
+      action: roadiehq:utils:fs:write
+      input:
+        path: './manifest-folder/catalog-info.yaml'
+        content: ${{ steps["update-metadata-title"].output.result }}
+    - id: update-metadata-desc
+      name: Update Component Description
+      if: ${{ parameters.componentDescription != null }}
+      action: roadiehq:utils:jsonata:yaml:transform 
+      input:
+        path: './manifest-folder/catalog-info.yaml'
+        expression: '$ ~> | $.metadata | { "description": "${{ parameters.componentDescription }}" } |' 
+    - id: write-metadata-desc-to-file
+      name: Overwrite the existing description with new contents
+      if: ${{ parameters.componentDescription != null }}
+      action: roadiehq:utils:fs:write
+      input:
+        path: './manifest-folder/catalog-info.yaml'
+        content: ${{ steps["update-metadata-desc"].output.result }}
+    - id: parse-catalog-manifest
+      name: Parse modified catalog manifest file
+      action: roadiehq:utils:fs:parse
+      input:
+        path: './manifest-folder/catalog-info.yaml'
+    - id: log-result
+      name: Display modified catalog manifest
+      action: debug:log
+      input:
+        message: 'Catalog Manifest content: ${{ steps["parse-catalog-manifest"].output.content }}'
+    - id: create-pr
+      name: Create a pull request
+      action: publish:github:pull-request
+      input:
+        sourcePath: ./manifest-folder/
+        targetPath: ./
+        repoUrl: github.com?repo=${{ steps["identify-repo-and-owner"].output.result.repo }}&owner=${{ steps["identify-repo-and-owner"].output.result.owner }}
+        branchName: add-tech-docs-${{ '' | now }}
+        title: Update entity with TechDocs annotations in catalog manifest
+        description: This PR updates a field values in the catalog entity.
+  
+  # These are the outputs from the backend steps, and can be displayed in the frontend after completion.
+  output:
+    links:
+      - title: View the pull request on GitHub
+        icon: github
+        url: ${{ steps['createPullRequest'].output.remoteUrl }}
