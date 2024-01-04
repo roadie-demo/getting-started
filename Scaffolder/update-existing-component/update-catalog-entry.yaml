@@ -21,25 +21,25 @@ spec:
       properties:
         specType:
           title: Component Type
-          description: 
+          description: The type of component.
           type: string
           enum: ['service', 'website', 'test', 'documentation', 'library'] # TODO: What are the types you have?
         specOwner:
           title: Component Owner
           type: string
-          description: Owner of the component
+          description: Owner of the component.
           ui:field: OwnerPicker
           ui:options:
             catalogFilter:
               kind: ['Group', 'Owner']
         specLifecycle:
           title: Component Lifecycle
-          description: 
+          description: The lifecycle state of the component.
           type: string
           enum: ['production', 'experimental', 'deprecated'] # TODO: What are the lifecycle environments you have?
         specSystem:
           title: Component System
-          description: 
+          description: An entity reference to the system that the component belongs to.
           type: string
     - title: Metadata Section Information
       properties:
@@ -226,13 +226,13 @@ spec:
         sourcePath: ./manifest-folder/
         targetPath: ./
         repoUrl: github.com?repo=${{ steps["identify-repo-and-owner"].output.result.repo }}&owner=${{ steps["identify-repo-and-owner"].output.result.owner }}
-        branchName: add-tech-docs-${{ '' | now }}
-        title: Update entity with TechDocs annotations in catalog manifest
-        description: This PR updates a field values in the catalog entity.
+        branchName: update-catalog-entry-${{ '' | now }}
+        title: Update catalog-info.yaml file
+        description: This PR updates the catalog-info.yaml file with new values provided in the form fields. Only fields with values provided are included in the change to the file. The catalog-info.yaml file is used by Roadie Backstage for catalog inclusion.
   
   # These are the outputs from the backend steps, and can be displayed in the frontend after completion.
   output:
     links:
       - title: View the pull request on GitHub
         icon: github
-        url: ${{ steps['createPullRequest'].output.remoteUrl }}
+        url: ${{ steps['create-pr'].output.remoteUrl }}
