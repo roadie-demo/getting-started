@@ -89,9 +89,10 @@ spec:
           repo: '${{ steps["identify-repo-and-owner"].output.result.owner }}/${{ steps["identify-repo-and-owner"].output.result.repo }}'
     - id: update-annotations
       name: Add annotation entry
-      action: roadiehq:utils:jsonata:yaml:transform # json:merge
+      action: roadiehq:utils:jsonata:yaml:transform 
       input:
         path: './manifest-folder/catalog-info.yaml'
+        loadAll: true
         expression: '$ ~> | $.metadata.annotations | $merge([$.metadata.annotations, { "backstage.io/techdocs-ref": "doc:."} ]) |' 
     - id: write-catalog-to-file
       name: Overwrite the existing catalog file with new contents
