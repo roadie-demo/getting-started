@@ -102,11 +102,20 @@ spec:
         - ensableTechDocs
       then:
         properties:
+          techDocsPathType:
+            title: Path Type
+            type: string
+            description: 'The path type to the TechDocs directory. This can be a directory in the repository using `docs``, or linked externally using `url`.'
+            default: docs
+            enum:
+              - docs
+              - url
+
           techDocsPath:
             title: Path
-            description: 'The path to the TechDocs directory. This can be a directory in the repository using docs:.; or linked externally using url:{url}.'
+            description: 'The path to the TechDocs directory. This can be a directory in the repository using `.` or `./custom-paths`, or linked externally with the URL.'
             type: string
-            default: 'docs:.'
+            default: '.'
 
   # These are the steps that are executed in series in the scaffolder backend.
   steps:
@@ -138,14 +147,27 @@ spec:
           argoAppName: ${{ parameters.argoAppName }}
           pagerdutyServiceId: ${{ parameters.pagerdutyServiceId }}
           lifecycle: ${{ parameters.lifecycle }}
-          techDocsPath: ${{ parameters.techDocsPath }}
+          techDocsPath: '${{parameters.techDocsPathType}}:.${{parameters.techDocsPath}}'
 
     - id: fetchTechDocsTemplate
-      if: ${{ parameters.ensableTechDocs }}
+      name: Write TechDocs to root path
+      if: ${{ parameters.ensableTechDocs and parameters.techDocsPath == '.' and parameters.techDocsPathType == 'docs' }}
       action: fetch:template
       input:
         url: ./techDocs
         templateFileExtension: .njk
+        values:
+          repoSlug: ${{ parameters.repoSlug }}
+          techDocsBody: ${{ parameters.techDocsBody }}
+
+    - id: fetchTechDocsTemplate
+      name: Write TechDocs to custom path
+      if: ${{ parameters.ensableTechDocs and parameters.techDocsPath != '.' and parameters.techDocsPathType == 'docs' }}
+      action: fetch:template
+      input:
+        url: ./techDocs
+        templateFileExtension: .njk
+        targetPath: ./${{parameters.techDocsPath}}
         values:
           repoSlug: ${{ parameters.repoSlug }}
           techDocsBody: ${{ parameters.techDocsBody }}

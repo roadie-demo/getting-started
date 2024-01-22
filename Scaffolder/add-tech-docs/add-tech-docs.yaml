@@ -13,16 +13,27 @@ spec:
     - title: Select an Entity
       required:
         - entity
+        - techDocsPathType
+        - techDocsPath
       properties:
         entity:
           type: string
           ui:field: EntityPicker
 
+        techDocsPathType:
+          title: Path Type
+          type: string
+          description: 'The path type to the TechDocs directory. This can be a directory in the repository using `docs``, or linked externally using `url`.'
+          default: docs
+          enum:
+            - docs
+            - url
+
         techDocsPath:
           title: Path
-          description: 'The path to the TechDocs directory. This can be a directory in the repository using docs:.; or linked externally using url:{url}.'
+          description: 'The path to the TechDocs directory. This can be a directory in the repository using `.` or `./custom-paths`, or linked externally with the URL.'
           type: string
-          default: 'docs:.'
+          default: '.'
 
   # These are the steps that are executed in series in the scaffolder backend.
   steps:
@@ -79,7 +90,9 @@ spec:
       action: debug:log
       input:
         message: 'Creating a PR to repo ${{ steps["identify-repo-and-owner"].output.result.repo }} owned by ${{ steps["identify-repo-and-owner"].output.result.owner }}'
-    - id: fetch-techDocs-template
+    - id: fetch-techDocs-template-root-path
+      name: Write TechDocs to root path
+      if: ${{ parameters.techDocsPath == '.' and parameters.techDocsPathType == 'docs' }}
       action: fetch:template
       input:
         url: ./techDocs
@@ -87,13 +100,22 @@ spec:
         targetPath: './manifest-folder/'
         values:
           repo: '${{ steps["identify-repo-and-owner"].output.result.owner }}/${{ steps["identify-repo-and-owner"].output.result.repo }}'
+    - id: fetch-techDocs-template-custom-path
+      name: Write TechDocs to custom path
+      if: ${{ parameters.techDocsPath != '.' and parameters.techDocsPathType == 'docs' }}
+      action: fetch:template
+      input:
+        url: ./techDocs
+        templateFileExtension: .njk
+        targetPath: ./manifest-folder/${{parameters.techDocsPath}}
+        values:
+          repo: '${{ steps["identify-repo-and-owner"].output.result.owner }}/${{ steps["identify-repo-and-owner"].output.result.repo }}'
     - id: update-annotations
       name: Add annotation entry
-      action: roadiehq:utils:jsonata:yaml:transform 
+      action: roadiehq:utils:jsonata:yaml:transform
       input:
         path: './manifest-folder/catalog-info.yaml'
-        loadAll: true
-        expression: '$ ~> | $.metadata.annotations | $merge([$.metadata.annotations, { "backstage.io/techdocs-ref": "doc:."} ]) |' 
+        expression: '$ ~> | $.metadata.annotations | $merge([$.metadata.annotations, { "backstage.io/techdocs-ref": "${{parameters.techDocsPathType}}:.${{parameters.techDocsPath}}" } ]) |' 
     - id: write-catalog-to-file
       name: Overwrite the existing catalog file with new contents
       action: roadiehq:utils:fs:write
@@ -110,7 +132,7 @@ spec:
       action: debug:log
       input:
         message: 'Catalog Manifest content: ${{ steps["parse-catalog-manifest"].output.content }}'
-    - id: create-pr
+    - id: createPullRequest
       name: Create a pull request
       action: publish:github:pull-request
       input:
