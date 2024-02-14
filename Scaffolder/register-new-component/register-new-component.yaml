@@ -105,10 +105,10 @@ spec:
           techDocsPathType:
             title: Path Type
             type: string
-            description: 'The path type to the TechDocs directory. This can be a directory in the repository using `docs``, or linked externally using `url`.'
-            default: docs
+            description: 'The path type to the TechDocs directory. This can be a directory in the repository using `dir``, or linked externally using `url`.'
+            default: dir
             enum:
-              - docs
+              - dir
               - url
 
           techDocsPath:
@@ -151,7 +151,7 @@ spec:
 
     - id: fetchTechDocsTemplate
       name: Write TechDocs to root path
-      if: ${{ parameters.ensableTechDocs and parameters.techDocsPath == '.' and parameters.techDocsPathType == 'docs' }}
+      if: ${{ parameters.ensableTechDocs and parameters.techDocsPath == '.' and parameters.techDocsPathType == 'dir' }}
       action: fetch:template
       input:
         url: ./techDocs
@@ -162,7 +162,7 @@ spec:
 
     - id: fetchTechDocsTemplate
       name: Write TechDocs to custom path
-      if: ${{ parameters.ensableTechDocs and parameters.techDocsPath != '.' and parameters.techDocsPathType == 'docs' }}
+      if: ${{ parameters.ensableTechDocs and parameters.techDocsPath != '.' and parameters.techDocsPathType == 'dir' }}
       action: fetch:template
       input:
         url: ./techDocs

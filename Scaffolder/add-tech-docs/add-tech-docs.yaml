@@ -23,10 +23,10 @@ spec:
         techDocsPathType:
           title: Path Type
           type: string
-          description: 'The path type to the TechDocs directory. This can be a directory in the repository using `docs``, or linked externally using `url`.'
+          description: 'The path type to the TechDocs directory. This can be a directory in the repository using `dir``, or linked externally using `url`.'
           default: docs
           enum:
-            - docs
+            - dir
             - url
 
         techDocsPath:
@@ -92,7 +92,7 @@ spec:
         message: 'Creating a PR to repo ${{ steps["identify-repo-and-owner"].output.result.repo }} owned by ${{ steps["identify-repo-and-owner"].output.result.owner }}'
     - id: fetch-techDocs-template-root-path
       name: Write TechDocs to root path
-      if: ${{ parameters.techDocsPath == '.' and parameters.techDocsPathType == 'docs' }}
+      if: ${{ parameters.techDocsPath == '.' and parameters.techDocsPathType == 'dir' }}
       action: fetch:template
       input:
         url: ./techDocs
@@ -102,7 +102,7 @@ spec:
           repo: '${{ steps["identify-repo-and-owner"].output.result.owner }}/${{ steps["identify-repo-and-owner"].output.result.repo }}'
     - id: fetch-techDocs-template-custom-path
       name: Write TechDocs to custom path
-      if: ${{ parameters.techDocsPath != '.' and parameters.techDocsPathType == 'docs' }}
+      if: ${{ parameters.techDocsPath != '.' and parameters.techDocsPathType == 'dir' }}
       action: fetch:template
       input:
         url: ./techDocs
