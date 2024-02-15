@@ -1,0 +1,12 @@
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: pov
+  description: An initial group for use during the Proof of Value phase, showcasing the functionality.
+spec:
+  type: root
+  children: []
+links:
+  definition:
+    url: https://backstage.io/docs/features/software-catalog/descriptor-format/#kind-group
+    title: Backstage specification for the group kind
