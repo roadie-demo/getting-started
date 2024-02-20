@@ -147,7 +147,7 @@ spec:
           argoAppName: ${{ parameters.argoAppName }}
           pagerdutyServiceId: ${{ parameters.pagerdutyServiceId }}
           lifecycle: ${{ parameters.lifecycle }}
-          techDocsPath: '${{parameters.techDocsPathType}}:.${{parameters.techDocsPath}}'
+          techDocsPath: '${{parameters.techDocsPathType}}:${{parameters.techDocsPath}}'
 
     - id: fetchTechDocsTemplate
       name: Write TechDocs to root path
@@ -158,7 +158,6 @@ spec:
         templateFileExtension: .njk
         values:
           repoSlug: ${{ parameters.repoSlug }}
-          techDocsBody: ${{ parameters.techDocsBody }}
 
     - id: fetchTechDocsTemplate
       name: Write TechDocs to custom path
@@ -170,7 +169,6 @@ spec:
         targetPath: ./${{parameters.techDocsPath}}
         values:
           repoSlug: ${{ parameters.repoSlug }}
-          techDocsBody: ${{ parameters.techDocsBody }}
 
     - id: createPullRequest
       name: createPullRequest
