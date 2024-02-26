@@ -134,6 +134,7 @@ spec:
                         }
                       )"
     - id: fetchCatalogTemplate
+      name: Fetch the catalog-info.yaml file.
       action: fetch:template
       input:
         url: ./skeleton
@@ -150,7 +151,7 @@ spec:
           techDocsPath: '${{parameters.techDocsPathType}}:${{parameters.techDocsPath}}'
 
     - id: fetchTechDocsTemplate
-      name: Write TechDocs to root path
+      name: Using TechDocs root path?
       if: ${{ parameters.ensableTechDocs and parameters.techDocsPath == '.' and parameters.techDocsPathType == 'dir' }}
       action: fetch:template
       input:
@@ -160,7 +161,7 @@ spec:
           repoSlug: ${{ parameters.repoSlug }}
 
     - id: fetchTechDocsTemplate
-      name: Write TechDocs to custom path
+      name: Using TechDocs custom path?
       if: ${{ parameters.ensableTechDocs and parameters.techDocsPath != '.' and parameters.techDocsPathType == 'dir' }}
       action: fetch:template
       input:
@@ -171,7 +172,7 @@ spec:
           repoSlug: ${{ parameters.repoSlug }}
 
     - id: createPullRequest
-      name: createPullRequest
+      name: Create Pull Request.
       action: publish:github:pull-request
       input:
         repoUrl: ${{ parameters.repoHost }}?owner=${{ steps['parse-repo-values'].output.result.gitHubOrg }}&repo=${{ steps['parse-repo-values'].output.result.repoName }}
