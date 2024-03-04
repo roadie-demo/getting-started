@@ -2,8 +2,8 @@ apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
 metadata:
   name: register-new-component
-  title: Register your software with Roadie Backstage
-  description: "Create a new PR with a catalog-info.yaml file with your software's details. Optionally configure additional integrations and TechDocs to be created and associated at time of registration."
+  title: Publish a new repository and register your software with Roadie Backstage
+  description: "Publish a new repository with a catalog-info.yaml file with your software's details. Optionally configure additional integrations and TechDocs to be created and associated at time of registration."
 spec:
   owner: unspecified # TODO: Define who the owner of this template is. This is likely the team who own the relationship with Roadie. e.g. group:customer-name/platform
   type: service
