@@ -63,7 +63,7 @@ spec:
           ui:options:
             title: Repository
             description: Choose the repository to be registered in your catalog.
-            path: "proxy/github/api/orgs/roadieHQ/repos" # TODO: Add the name of your GitHub org. e.g. `/orgs/{reporOrg}/repos`
+            path: "proxy/github/api/orgs/roadie-demo/repos" # TODO: Add the name of your GitHub org. e.g. `/orgs/{reporOrg}/repos`
             params:
               per_page: '100'
               page: '{{ parameters.repoPage }}'
