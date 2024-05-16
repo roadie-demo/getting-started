@@ -27,7 +27,7 @@ spec:
         repoName:
           title: Repository Name
           type: string
-          default: company-docs
+          default: company-docs # TODO: Set your default name for the documentation repository here.
 
         defaultBranch:
           title: Repository Branch
@@ -45,7 +45,6 @@ spec:
       required:
         - name
         - description
-        - type
         - lifecycle
       properties:
         name:
@@ -113,9 +112,9 @@ spec:
       input:
         url: ./techDocs
         templateFileExtension: .njk
-        targetPath: ./docs/${{ each.value | replace("-", " ") | lower }}
+        targetPath: ./docs/${{ each.value | replace(" ", "-") | lower }}
         values:
-          name: ${{ each.value | replace("-", " ") | lower }}
+          name: ${{ each.value | replace(" ", "-") | lower }}
 
     - id: publishRepo
       name: Publish New Repository.
