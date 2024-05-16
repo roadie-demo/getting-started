@@ -1,0 +1,135 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: publish-standalone-tech-docs
+  title: Publish a new standalone TechDocs repository and register with Roadie Backstage
+  description: "Publish a new repository with a catalog-info.yaml file with your company's standalone TechDocs details."
+spec:
+  owner: unspecified # TODO: Define who the owner of this template is. This is likely the team who own the relationship with Roadie. e.g. group:customer-name/platform
+  type: service
+
+  # These are the steps which are rendered in the frontend with the form input.
+  parameters:
+    - title: Repository Details # Title of the first step.
+      required:
+        - repoName
+      properties:
+        repoHost:
+          type: string
+          default: github.com
+          ui:widget: hidden
+
+        gitHubOrg:
+          type: string
+          default: roadie-demo # TODO: Set your GitHub Org value here.
+          ui:widget: hidden
+
+        repoName:
+          title: Repository Name
+          type: string
+          default: company-docs
+
+        defaultBranch:
+          title: Repository Branch
+          type: string
+          default: main # TODO: Define your expected default branch.
+          enum: ['main']
+
+        repoVisibility:
+          title: Repository Visibility
+          type: string
+          default: private
+          enum: ['private', 'public']
+
+    - title: TechDocs Details # Title of the second step.
+      required:
+        - name
+        - description
+        - type
+        - lifecycle
+      properties:
+        name:
+          title: Component Name
+          description: The name of the component in Roadie Backstage, typically the same name used in the repository. This will be used to create a human readable title.
+          type: string
+
+        description:
+          title: Component Description
+          decription: A Detailed decription allows for the component to be easily found and understood in Roadie Backstage.
+          type: string
+
+        lifecycle:
+          title: Component Lifecycle
+          type: string
+          default: production # TODO: Add your most common lifecycle here.
+          enum: ['production', 'experimental', 'development'] # TODO: What are the lifecycle environments you have?
+
+        owner:
+          title: Component Owner
+          type: string
+          description: Owner of the component
+          ui:field: OwnerPicker
+          ui:options:
+            catalogFilter:
+              kind: Group # TODO: Decide if you want to allow setting owner by user, group, or both. e.g. [Group, User]
+        
+        subDirectoryNames:
+          title: List of subdirectories
+          description: A List of TechDocs subdirectories to be created at repo publishing.
+          type: array
+          items:
+            type: string
+            title: A Subdirectory
+
+  # These are the steps that are executed in series in the scaffolder backend.
+  steps:
+    - id: fetchCatalogTemplate
+      name: Fetch the catalog-info.yaml file.
+      action: fetch:template
+      input:
+        url: ./skeleton
+        templateFileExtension: .njk
+        values:
+          name: ${{ parameters.name }}
+          description: ${{ parameters.description }}
+          owner: ${{ parameters.owner }}
+          repoSlug: ${{ parameters.repoName }}
+          lifecycle: ${{ parameters.lifecycle }}
+
+    - id: fetchTechDocsTemplate
+      name: Create repo root TechDocs entry.
+      action: fetch:template
+      input:
+        url: ./techDocs
+        templateFileExtension: .njk
+        targetPath: ./docs
+        values:
+          name: ${{ parameters.repoSlug }}
+
+    - id: fetchsubDirectoryNamesTemplate
+      name: Create TechDocs subdirectories.
+      each: ${{ parameters.subDirectoryNames }}
+      action: fetch:template
+      input:
+        url: ./techDocs
+        templateFileExtension: .njk
+        targetPath: ./docs/${{ each.value | replace("-", " ") | lower }}
+        values:
+          name: ${{ each.value | replace("-", " ") | lower }}
+
+    - id: publishRepo
+      name: Publish New Repository.
+      action: publish:github
+      input:
+        repoUrl: ${{ parameters.repoHost }}?owner=${{ parameters.gitHubOrg }}&repo=${{ parameters.repoName }}
+        repoVisibility: ${{ parameters.repoVisibility }}
+        defaultBranch: ${{ parameters.defaultBranch }}
+        title: Publish new Repository
+        description: Publish a new repository for ${{ parameters.name }} to Github.
+  
+  # These are the outputs from the backend steps, and can be displayed in the frontend after completion.
+  output:
+    links:
+      - title: View the published repo on GitHub
+        icon: github
+        url: ${{ steps['publishRepo'].output.remoteUrl }}
