@@ -2,15 +2,15 @@ apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
 metadata:
   name: delete-repo
-  title: Register your software with Roadie Backstage
-  description: "Create a new PR with a catalog-info.yaml file with your software's details. Optionally configure additional integrations and TechDocs to be created and associated at time of registration."
+  title: Delete a repository.
+  description: "Delete an existing repository in your GitHub organziation."
 spec:
   owner: unspecified # TODO: Define who the owner of this template is. This is likely the team who own the relationship with Roadie. e.g. group:customer-name/platform
   type: service
 
   # These are the steps which are rendered in the frontend with the form input.
   parameters:
-    - title: Component Details # Title of the first step.
+    - title: Repository Selection # Title of the first step.
       required:
         - repoSlug
       properties:
@@ -33,7 +33,7 @@ spec:
           default: 1
 
         authorization:
-          title: I have authorization to delete repository.
+          title: I have authorization to delete this repository.
           default: false
           type: boolean
 
