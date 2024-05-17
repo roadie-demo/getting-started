@@ -2,11 +2,11 @@ apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
   name: ${{ values.name }}
-  title: ${{ values.name | replace(" ", "-") | lower}}
+  title: ${{ values.name | replace("-", " ") | lower}}
   description: ${{ values.description }}
   annotations:
     github.com/project-slug: ${{ values.repoSlug }}
-    backstage.io/techdocs-ref: docs:./
+    backstage.io/techdocs-ref: docs:.
 spec:
   type: documentation
   owner: ${{ values.owner }}

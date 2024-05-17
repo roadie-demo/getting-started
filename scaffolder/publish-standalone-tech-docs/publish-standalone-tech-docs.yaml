@@ -12,7 +12,8 @@ spec:
   parameters:
     - title: Repository Details # Title of the first step.
       required:
-        - repoName
+        - name
+        - description
       properties:
         repoHost:
           type: string
@@ -24,49 +25,31 @@ spec:
           default: roadie-demo # TODO: Set your GitHub Org value here.
           ui:widget: hidden
 
-        repoName:
-          title: Repository Name
+        repoBranch:
+          type: string
+          default: main # TODO: Define your expected default branch.
+          ui:widget: hidden
+
+        name:
+          title: Name
           type: string
           default: company-docs # TODO: Set your default name for the documentation repository here.
 
-        defaultBranch:
-          title: Repository Branch
-          type: string
-          default: main # TODO: Define your expected default branch.
-          enum: ['main']
-
-        repoVisibility:
-          title: Repository Visibility
-          type: string
-          default: private
-          enum: ['private', 'public']
-
-    - title: TechDocs Details # Title of the second step.
-      required:
-        - name
-        - description
-        - lifecycle
-      properties:
-        name:
-          title: Component Name
-          description: The name of the component in Roadie Backstage, typically the same name used in the repository. This will be used to create a human readable title.
-          type: string
-
         description:
-          title: Component Description
-          decription: A Detailed decription allows for the component to be easily found and understood in Roadie Backstage.
+          title: Description
+          decription: A Detailed decription allows for the documentation catalog entry to be easily found and understood in Roadie Backstage tenant.
           type: string
 
         lifecycle:
-          title: Component Lifecycle
+          title: Lifecycle
+          description: The initial lifecycle state of the documentation catalog entry.
           type: string
-          default: production # TODO: Add your most common lifecycle here.
-          enum: ['production', 'experimental', 'development'] # TODO: What are the lifecycle environments you have?
+          default: production # TODO: Add your most common lifecycle state here.
 
         owner:
-          title: Component Owner
+          title: Owner
           type: string
-          description: Owner of the component
+          description: Owner of the documentation catalog entity.
           ui:field: OwnerPicker
           ui:options:
             catalogFilter:
@@ -74,7 +57,7 @@ spec:
         
         subDirectoryNames:
           title: List of subdirectories
-          description: A List of TechDocs subdirectories to be created at repo publishing.
+          description: A List of documentation subdirectories to be created at publishing.
           type: array
           items:
             type: string
@@ -92,7 +75,7 @@ spec:
           name: ${{ parameters.name }}
           description: ${{ parameters.description }}
           owner: ${{ parameters.owner }}
-          repoSlug: ${{ parameters.repoName }}
+          repoSlug: ${{ parameters.name }}
           lifecycle: ${{ parameters.lifecycle }}
 
     - id: fetchTechDocsTemplate
@@ -121,8 +104,8 @@ spec:
       action: publish:github
       input:
         repoUrl: ${{ parameters.repoHost }}?owner=${{ parameters.gitHubOrg }}&repo=${{ parameters.repoName }}
-        repoVisibility: ${{ parameters.repoVisibility }}
-        defaultBranch: ${{ parameters.defaultBranch }}
+        repoVisibility: ${{ parameters.repoBranch }}
+        defaultBranch: main # TODO: Define your expected default branch.
         title: Publish new Repository
         description: Publish a new repository for ${{ parameters.name }} to Github.
   
