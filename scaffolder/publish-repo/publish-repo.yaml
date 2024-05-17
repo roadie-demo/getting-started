@@ -1,7 +1,7 @@
 apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
 metadata:
-  name: register-new-component
+  name: publish-repo
   title: Publish a new repository and register your software with Roadie Backstage
   description: "Publish a new repository with a catalog-info.yaml file with your software's details. Optionally configure additional integrations and TechDocs to be created and associated at time of registration."
 spec:
