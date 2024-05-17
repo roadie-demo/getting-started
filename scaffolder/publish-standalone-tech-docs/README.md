@@ -7,19 +7,16 @@ The template allows for quickly and efficiently publishing a new repository to y
 1. Collect repository information:
    - Repo Host: Hardcoded and hidden, this is used in building the pull request. Alternatively, you may expose this as a select list [example below].
    - GitHub Org: Hardcoded and hidden, this is used in building the pull request. 
-   - Repo Name: The name of the repository to be registered in Roadie Backstage. 
    - Default Branch: The expected default branch of the repository.
-   - Repo Visibility: The expected visibility of the repository.
-2. Collect TechDocs information:
-   - Name: The name of the component we are registering, this will be parsed and converted into a human readable title.
-   - Description: This should be used to provided detailed information in the catalog list.
-   - Lifecycle: The current lifecycle of the documentation work.
+   - Name: The name of the documentation catalog entity we are registering, this will be parsed and converted into a human readable title.
+   - Description: This should be used to provide detailed information regarding the documentation catalog entity in the Roadie Backstage tenant.
+   - Lifecycle: The initial lifecycle state of the documentation catalog entity.
    - Owner: This should be the employee or team tasked with company documentation, such as a Tech Writer or Solutions department.
    - Subdirectory Names: A List of TechDocs subdirectories to be created at repo publishing.
 
 ## Outputs
 - Publishes a new repository and adds the following additions to the repository:
-  1. Creates the `catalog-info.yaml` file for registration in the catalog.
+  1. Creates the `catalog-info.yaml` file for registration the documentation entity in the catalog.
   2. Creates the required files for TechDocs:
      - `MKDocs.yaml`: The configuration file for the repositories TechDocs.
      - `/docs/index.md`: The index page for the repositories TechDocs.
@@ -34,9 +31,9 @@ The template allows for quickly and efficiently publishing a new repository to y
 ### Repository Details
 - [ ] `gitHubOrg`: Set your GitHub organization name.
 - [ ] `repoName`: Set your default name for the documentation repository.
-- [ ] `defaultBranch`: Set your expected default branch and add additional choices as necessary.
+- [ ] `defaultBranch`: Set your expected default branch.
 
 ### TechDocs Details
 Roadie Relationship.
-- [ ] `lifecycle`: Confirm the `default` and the lifecycles available are options you support.
+- [ ] `lifecycle`: Confirm the `default` expected initial lifecycle state of the documentation repo.
 - [ ] `owner`: Will the component be owned by an individual, group or both?
