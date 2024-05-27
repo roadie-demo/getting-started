@@ -1,7 +1,7 @@
 # Create a Publish Standalone TechDocs Repository Template
 
 ## Outline
-The template allows for quickly and efficiently publishing a new repository to your organizations GitHub instance to host your internal documentation via TechDocs, as well as registering to the Roadie Backstage catalog by adding and configuring the `catalog-info.yaml` with the recommended data points necessary for the entity to be listed in the catalog. 
+The template allows for quickly and efficiently publishing a new repository to your organizations GitHub instance to host your internal documentation via TechDocs, with the ability to specify documentation groupings for department or cohort level organization; as well as registering the documentation repo to the Roadie Backstage catalog by adding and configuring the `catalog-info.yaml` with the recommended data points necessary for the entity to be listed in the catalog. 
 
 ## Inputs
 1. Collect repository information:
@@ -12,7 +12,7 @@ The template allows for quickly and efficiently publishing a new repository to y
    - Description: This should be used to provide detailed information regarding the documentation catalog entity in the Roadie Backstage tenant.
    - Lifecycle: The initial lifecycle state of the documentation catalog entity.
    - Owner: This should be the employee or team tasked with company documentation, such as a Tech Writer or Solutions department.
-   - Subdirectory Names: A List of TechDocs subdirectories to be created at repo publishing.
+   - Documentation Grouping: A List of TechDocs subdirectories to be created at repo publishing. Common uses cases are a grouping for each department (Engineering, QA, Product, Design), or cohort (Marketing Site, A Product, B Service).
 
 ## Outputs
 - Publishes a new repository and adds the following additions to the repository:
@@ -20,8 +20,8 @@ The template allows for quickly and efficiently publishing a new repository to y
   2. Creates the required files for TechDocs:
      - `MKDocs.yaml`: The configuration file for the repositories TechDocs.
      - `/docs/index.md`: The index page for the repositories TechDocs.
-  3. Create the optionally specified subdirectories and files:
-     - `/docs/subdirectoryName/index.md`: The index page for the subdirectory.
+  3. Create the optionally specified documentation groupings and files:
+     - `/docs/documentationGrouping/index.md`: The index page for the grouping.
 
 ## TODO's
 

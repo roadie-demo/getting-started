@@ -42,7 +42,7 @@ spec:
 
         lifecycle:
           title: Lifecycle
-          description: The initial lifecycle state of the documentation catalog entry.
+          description: The initial lifecycle state of the documentation stand-alone repo.
           type: string
           default: production # TODO: Add your most common lifecycle state here.
 
@@ -55,13 +55,14 @@ spec:
             catalogFilter:
               kind: Group # TODO: Decide if you want to allow setting owner by user, group, or both. e.g. [Group, User]
         
-        subDirectoryNames:
-          title: List of subdirectories
-          description: A List of documentation subdirectories to be created at publishing.
+        documentationGrouping:
+          title: Documentation Groupings
+          description: Documentation grouping can be departments or cohorts. Each grouping with get their own subdirectory and index page.
           type: array
           items:
             type: string
             title: A Subdirectory
+            default: ['Engineering','Product', 'QA']
 
   # These are the steps that are executed in series in the scaffolder backend.
   steps:
@@ -88,9 +89,9 @@ spec:
         values:
           name: ${{ parameters.repoSlug }}
 
-    - id: fetchsubDirectoryNamesTemplate
+    - id: fetchdocumentationGroupingTemplate
       name: Create TechDocs subdirectories.
-      each: ${{ parameters.subDirectoryNames }}
+      each: ${{ parameters.documentationGrouping }}
       action: fetch:template
       input:
         url: ./techDocs
