@@ -105,7 +105,7 @@ spec:
       action: publish:github
       input:
         repoUrl: ${{ parameters.repoHost }}?owner=${{ parameters.gitHubOrg }}&repo=${{ parameters.repoName }}
-        repoVisibility: ${{ parameters.repoBranch }}
+        repoVisibility: private
         defaultBranch: main # TODO: Define your expected default branch.
         title: Publish new Repository
         description: Publish a new repository for ${{ parameters.name }} to Github.
