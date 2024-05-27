@@ -61,8 +61,7 @@ spec:
           type: array
           items:
             type: string
-            title: A Subdirectory
-            default: ['Engineering','Product', 'QA']
+            title: A Documentation Grouping
 
   # These are the steps that are executed in series in the scaffolder backend.
   steps:
@@ -76,7 +75,7 @@ spec:
           name: ${{ parameters.name }}
           description: ${{ parameters.description }}
           owner: ${{ parameters.owner }}
-          repoSlug: ${{ parameters.name }}
+          repoSlug: ${{ parameters.gitHubOrg }}/${{ parameters.name }}
           lifecycle: ${{ parameters.lifecycle }}
 
     - id: fetchTechDocsTemplate
@@ -87,7 +86,7 @@ spec:
         templateFileExtension: .njk
         targetPath: ./docs
         values:
-          name: ${{ parameters.repoSlug }}
+          name: ${{ parameters.name }}
 
     - id: fetchdocumentationGroupingTemplate
       name: Create TechDocs subdirectories.
@@ -104,9 +103,9 @@ spec:
       name: Publish New Repository.
       action: publish:github
       input:
-        repoUrl: ${{ parameters.repoHost }}?owner=${{ parameters.gitHubOrg }}&repo=${{ parameters.repoName }}
+        repoUrl: ${{ parameters.repoHost }}?owner=${{ parameters.gitHubOrg }}&repo=${{ parameters.name }}
         repoVisibility: private
-        defaultBranch: main # TODO: Define your expected default branch.
+        defaultBranch: ${{ parameters.repoBranch }}
         title: Publish new Repository
         description: Publish a new repository for ${{ parameters.name }} to Github.
   
