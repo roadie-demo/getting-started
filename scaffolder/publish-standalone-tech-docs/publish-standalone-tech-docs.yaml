@@ -45,6 +45,7 @@ spec:
           description: The initial lifecycle state of the documentation stand-alone repo.
           type: string
           default: production # TODO: Add your most common lifecycle state here.
+          enum: ['production', 'development', 'experimental']
 
         owner:
           title: Owner
