@@ -5,7 +5,7 @@ metadata:
   title: Update existing catalog-info.yaml file of a previously registered component
   description: "Create a new PR with an updated catalog-info.yaml file."
 spec:
-  owner: unspecified # TODO: Define who the owner of this template is. This is likely the team who own the relationship with Roadie. e.g. group:customer-name/platform
+  owner: group:roadie-demo/solutions # TODO: Define who the owner of this template is. This is likely the team who own the relationship with Roadie. e.g. group:customer-name/platform
   type: service
 
   # These are the steps which are rendered in the frontend with the form input.

@@ -5,7 +5,7 @@ metadata:
   title: Publish a new standalone TechDocs repository and register with Roadie Backstage
   description: "Publish a new repository with a catalog-info.yaml file with your company's standalone TechDocs details."
 spec:
-  owner: unspecified # TODO: Define who the owner of this template is. This is likely the team who own the relationship with Roadie. e.g. group:customer-name/platform
+  owner: group:roadie-demo/solutions # TODO: Define who the owner of this template is. This is likely the team who own the relationship with Roadie. e.g. group:customer-name/platform
   type: service
 
   # These are the steps which are rendered in the frontend with the form input.
