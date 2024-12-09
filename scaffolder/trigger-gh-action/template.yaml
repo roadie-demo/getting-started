@@ -11,15 +11,8 @@ spec:
   # These are the steps which are rendered in the frontend with the form input.
   parameters:
     - title: Component Location # Title of the second step.
-      required:
-        - repoSlug
       properties:
-        repoHost:
-          type: string
-          default: github.com
-          ui:widget: hidden
-
-        repoSlug:
+        entity:
           type: string
           ui:field: EntityPicker
 
