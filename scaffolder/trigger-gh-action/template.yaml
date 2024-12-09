@@ -30,7 +30,8 @@ spec:
       action: debug:log
       name: Log Entity chosen
       input:
-        message: "Retrieving catalog manifest from ${{ parameters.entity }}"
+        message: "${{ parameters.entity }} selected to run GH Action against."
+
     - id: retrieve-entity-info
       name: Retrieve Entity information from Roadie
       action: http:backstage:request
@@ -42,13 +43,13 @@ spec:
       action: debug:log
       name: Log identified manifest location
       input:
-        message: "Retrieving catalog manifest from ${{ steps['backstage_request'].output.body.metadata.annotations['backstage.io/managed-by-origin-location'] }}"
+        message: "Retrieving catalog manifest from ${{ steps['retrieve-entity-info'].output.body.metadata.annotations['backstage.io/managed-by-location'] }}"
 
     - id: identify-repo-and-owner
       name: Identify repository and owner
       action: roadiehq:utils:jsonata
       input:
-        data: "${{ steps['backstage_request'].output.body }}"
+        data: "${{ steps['retrieve-entity-info'].output.body }}"
         expression: '$.metadata.annotations.(
                       $slug := $substringAfter($."backstage.io/managed-by-location", "url:https://github.com/");
                       $owner := $substringBefore($slug, "/");
