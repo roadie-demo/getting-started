@@ -2,7 +2,7 @@ apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
 metadata:
   name: trigger-gh-action
-  title: 
+  title: Trigger GitHub Action
   description: ""
 spec:
   owner: group:roadie-demo/solutions # TODO: Define who the owner of this template is. This is likely the team who own the relationship with Roadie. e.g. group:customer-name/platform
@@ -10,6 +10,10 @@ spec:
 
   # These are the steps which are rendered in the frontend with the form input.
   parameters:
+    - title: Component Location # Title of the second step.
+      required:
+        - repoSlug
+      properties:
         repoHost:
           type: string
           default: github.com
@@ -17,52 +21,45 @@ spec:
 
         repoSlug:
           type: string
-          ui:field: SelectFieldFromApi
-          ui:options:
-            title: Repository
-            description: Choose the repository to be registered in your catalog.
-            path: "proxy/github/api/orgs/roadie-demo/repos" # TODO: Add the name of your GitHub org. e.g. `/orgs/{reporOrg}/repos`
-            params:
-              per_page: '100'
-              page: '{{ parameters.repoPage }}'
-            valueSelector: "full_name"
-            labelSelector: "name"
-
-        repoPage:
-          title: Page Number
-          type: number
-          default: 1
+          ui:field: EntityPicker
 
         workflow:
           title: Workflow
-          description: 
+          description: Select the workflow you would like to run.
           type: string
           enum:
-            - manual.yml
+            - 'manual.yml'
 
 
   # These are the steps that are executed in series in the scaffolder backend.
   steps:
-    - id: parse-repo-values
-      name: Parse Repo Org and Slug from selected value.
+    - id: retrieve-entity-info
+      name: Retrieve Entity information from Roadie
+      action: http:backstage:request
+      input:
+        method: 'GET'
+        path: "/catalog/entities/by-name/${{ parameters.entity | replace(':', '/') }}"
+
+    - id: identify-repo-and-owner
+      name: Identify repository and owner
       action: roadiehq:utils:jsonata
       input:
-        data:
-          item: ${{ parameters.repoSlug }}
-        expression: "(
-                        $Org := $substringBefore($.item, '/');
-                        $Name := $substringAfter($.item, '/');
-                        {
-                          'gitHubOrg': $Org,
-                          'repoName': $Name
-                        }
-                      )"
+        data: "${{ steps['backstage_request'].output.body }}"
+        expression: '$.metadata.annotations.(
+                      $slug := $substringAfter($."backstage.io/managed-by-location", "url:https://github.com/");
+                      $owner := $substringBefore($slug, "/");
+                      {
+                          "slug": $slug,
+                          "owner": $owner,
+                          "repo": $substringBefore($substringAfter($slug & $owner & "/", "/"), "/")
+                      }
+                    )'
 
     - id: trigger-build
       name: Trigger Build
       action: github:actions:dispatch
       input:
-        repoUrl: ${{ parameters.repoHost }}?owner=${{ steps['parse-repo-values'].output.result.gitHubOrg }}&repo=${{ steps['parse-repo-values'].output.result.repoName }}
+        repoUrl: github.com?owner=${{ steps['identify-repo-and-owner'].output.result.gitHubOrg }}&repo=${{ steps['identify-repo-and-owner'].output.result.repoName }}
         workflowId: ${{ parameters.workflow }}
         branchOrTagName: 'main'
   
