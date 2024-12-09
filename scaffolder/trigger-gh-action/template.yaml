@@ -1,0 +1,74 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: trigger-gh-action
+  title: 
+  description: ""
+spec:
+  owner: group:roadie-demo/solutions # TODO: Define who the owner of this template is. This is likely the team who own the relationship with Roadie. e.g. group:customer-name/platform
+  type: service
+
+  # These are the steps which are rendered in the frontend with the form input.
+  parameters:
+        repoHost:
+          type: string
+          default: github.com
+          ui:widget: hidden
+
+        repoSlug:
+          type: string
+          ui:field: SelectFieldFromApi
+          ui:options:
+            title: Repository
+            description: Choose the repository to be registered in your catalog.
+            path: "proxy/github/api/orgs/roadie-demo/repos" # TODO: Add the name of your GitHub org. e.g. `/orgs/{reporOrg}/repos`
+            params:
+              per_page: '100'
+              page: '{{ parameters.repoPage }}'
+            valueSelector: "full_name"
+            labelSelector: "name"
+
+        repoPage:
+          title: Page Number
+          type: number
+          default: 1
+
+        workflow:
+          title: Workflow
+          description: 
+          type: string
+          enum:
+            - manual.yml
+
+
+  # These are the steps that are executed in series in the scaffolder backend.
+  steps:
+    - id: parse-repo-values
+      name: Parse Repo Org and Slug from selected value.
+      action: roadiehq:utils:jsonata
+      input:
+        data:
+          item: ${{ parameters.repoSlug }}
+        expression: "(
+                        $Org := $substringBefore($.item, '/');
+                        $Name := $substringAfter($.item, '/');
+                        {
+                          'gitHubOrg': $Org,
+                          'repoName': $Name
+                        }
+                      )"
+
+    - id: trigger-build
+      name: Trigger Build
+      action: github:actions:dispatch
+      input:
+        repoUrl: ${{ parameters.repoHost }}?owner=${{ steps['parse-repo-values'].output.result.gitHubOrg }}&repo=${{ steps['parse-repo-values'].output.result.repoName }}
+        workflowId: ${{ parameters.workflow }}
+        branchOrTagName: 'main'
+  
+  # These are the outputs from the backend steps, and can be displayed in the frontend after completion.
+  output:
+    links:
+      - title: View the published repo on GitHub
+        icon: github
+        url: ${{ steps['publishRepo'].output.remoteUrl }}
