@@ -1,0 +1,15 @@
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  namespace: default
+  name: rose-tyler
+  links:
+    - title: Backstage specification for the group kind
+      url: https://tardis.fandom.com/wiki/Rose_Tyler
+      
+spec:
+  profile:
+    displayName: Rose Tyler
+    picture: https://static.wikia.nocookie.net/tardis/images/1/10/Rose_Parallel_world_and_my_dad%27s_still_alive.jpg/revision/latest?cb=20231017013223
+  memberOf:
+    - external
