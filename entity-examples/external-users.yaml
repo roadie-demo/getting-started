@@ -3,7 +3,7 @@ kind: User
 metadata:
   namespace: default
   name: rose-tyler
-  title: Interconnectivity Consultant
+  description: Interconnectivity Consultant for the Nineth Doctor.
   links:
     - title: Backstage specification for the group kind
       url: https://tardis.fandom.com/wiki/Rose_Tyler
