@@ -10,6 +10,6 @@ metadata:
 spec:
   profile:
     displayName: Rose Tyler
-    picture: https://static.wikia.nocookie.net/tardis/images/1/10/Rose_Parallel_world_and_my_dad%27s_still_alive.jpg/revision/latest?cb=20231017013223
+    picture: https://en.wikipedia.org/wiki/Rose_Tyler#/media/File:Rose_Tyler.jpg
   memberOf:
-    - external
+    - roadie-demo/external
