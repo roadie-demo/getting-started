@@ -64,6 +64,12 @@ spec:
           ui:help: The expected input is `GitHub-Org/Repo-Name`.
           pattern: '^[a-zA-Z1-9-_.]+\/[a-zA-Z1-9-_.]+$'
 
+        defaultBranch:
+          title: Repository Branch
+          type: string
+          default: main # TODO: Define your expected default branch.
+          enum: ['main']
+
         entityTags:
           type: array
           ui:field: EntityTagsPicker
@@ -136,6 +142,7 @@ spec:
           owner: ${{ parameters.owner }}
           type: ${{ parameters.type }}
           repoSlug: ${{ parameters.repoSlug }}
+          defaultBranch: ${{ parameters.defaultBranch }}
           argoAppName: ${{ parameters.argoAppName }}
           pagerdutyServiceId: ${{ parameters.pagerdutyServiceId }}
           lifecycle: ${{ parameters.lifecycle }}

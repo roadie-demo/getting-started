@@ -6,6 +6,7 @@ metadata:
   description: ${{ values.description }}
   annotations:
     github.com/project-slug: ${{ values.repoSlug }}
+    backstage.io/source-location: url:https://github.com/${{ values.repoSlug }}/tree/${{ values.defaultBranch }}/
     {%if values.techDocsPath %}backstage.io/techdocs-ref: ${{values.techDocsPath}} {% endif %}
     {%if values.argoAppName %}argocd/app-name: ${{values.argoAppName}} {% endif %}
     {%if values.pagerdutyServiceId %}pagerduty.com/service-id: ${{values.pagerdutyServiceId}} {% endif %}
