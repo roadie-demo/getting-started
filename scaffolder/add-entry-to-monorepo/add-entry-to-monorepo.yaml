@@ -1,0 +1,187 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: add-entry-to-monorepo
+  title: Add a new entry to Monorepo
+  description: "Add a new entry to an existing Monorepo to register a catalog entity."
+spec:
+  owner: group:roadie-demo/solutions # TODO: Define who the owner of this template is. This is likely the team who own the relationship with Roadie. e.g. group:customer-name/platform
+  type: service
+
+  # These are the steps which are rendered in the frontend with the form input.
+  parameters:
+    - title: Component Details # Title of the first step.
+      required:
+        - name
+        - description
+        - type
+        - lifecycle
+      properties:
+        name:
+          title: Component Name
+          type: string
+          description: The name of the component in Roadie Backstage, typically the same name used in the repository. This will be used to create a human readable title.
+
+        description:
+          title: Component Description
+          decription: A Detailed decription allows for the component to be easily found and understood in Roadie Backstage.
+          type: string
+
+        type:
+          title: Component Type
+          type: string
+          default: service # TODO: Add your most common component type here.
+          enum: ['service', 'website', 'test', 'documentation', 'library'] # TODO: What are the types you have?
+
+        lifecycle:
+          title: Component Lifecycle
+          type: string
+          default: production # TODO: Add your most common lifecycle here.
+          enum: ['production', 'experimental', 'deprecated'] # TODO: What are the lifecycle environments you have?
+
+        owner:
+          title: Component Owner
+          type: string
+          description: Owner of the component
+          ui:field: OwnerPicker
+          ui:options:
+            catalogFilter:
+              kind: Group # TODO: Decide if you want to allow setting owner by user, group, or both. e.g. [Group, User]
+
+    - title: Component Location # Title of the second step.
+      required:
+        - repoSlug
+      properties:
+        repoHost:
+          type: string
+          default: github.com
+          ui:widget: hidden
+
+        repoSlug:
+          name: Repo Slug
+          type: string
+          description: Choose the repository to be registered in your catalog.
+          ui:help: The expected input is `GitHub-Org/Repo-Name`.
+          pattern: '^[a-zA-Z1-9-_.]+\/[a-zA-Z1-9-_.]+$'
+
+        defaultBranch:
+          title: Repository Branch
+          type: string
+          default: main # TODO: Define your expected default branch.
+          enum: ['main']
+
+        entityTags:
+          type: array
+          ui:field: EntityTagsPicker
+
+    - title: Integrations (optional) # Title of the third step.
+      properties: #TODO: Specify any additional integrations associated with your repos.
+        argoAppName:
+          title: Argo CD App Name
+          type: string
+
+        pagerdutyServiceId:
+          title: PagerDuty Service ID
+          type: string
+
+        ensableTechDocs:
+          title: Enable TechDocs
+          default: true
+          type: boolean
+
+      if:
+        properties:
+          ensableTechDocs:
+            const: true
+        required:
+        - ensableTechDocs
+      then:
+        properties:
+          techDocsPathType:
+            title: Path Type
+            type: string
+            description: 'The path type to the TechDocs directory. This can be a directory in the repository using `dir``, or linked externally using `url`.'
+            default: dir
+            enum:
+              - dir
+              - url
+
+          techDocsPath:
+            title: Path
+            description: 'The path to the TechDocs directory. This can be a directory in the repository using `.` or `./custom-paths`, or linked externally with the URL.'
+            type: string
+            default: '.'
+
+  # These are the steps that are executed in series in the scaffolder backend.
+  steps:
+    - id: parse-repo-values
+      name: Parse Repo Org and Slug from selected value.
+      action: roadiehq:utils:jsonata
+      input:
+        data:
+          item: ${{ parameters.repoSlug }}
+        expression: "(
+                        $Org := $substringBefore($.item, '/');
+                        $Name := $substringAfter($.item, '/');
+                        {
+                          'gitHubOrg': $Org,
+                          'repoName': $Name
+                        }
+                      )"
+
+    - id: fetchCatalogTemplate
+      name: Fetch the catalog-info.yaml file.
+      action: fetch:template
+      input:
+        url: ./skeleton
+        templateFileExtension: .njk
+        targetPath: ./${{ steps['parse-repo-values'].output.result.repoName }} #TODO: Define your monorepo structure here.
+        values:
+          name: ${{ parameters.name }}
+          description: ${{ parameters.description }}
+          owner: ${{ parameters.owner }}
+          type: ${{ parameters.type }}
+          repoSlug: ${{ parameters.repoSlug }}
+          defaultBranch: ${{ parameters.defaultBranch }}
+          argoAppName: ${{ parameters.argoAppName }}
+          pagerdutyServiceId: ${{ parameters.pagerdutyServiceId }}
+          lifecycle: ${{ parameters.lifecycle }}
+          techDocsPath: '${{parameters.techDocsPathType}}:${{parameters.techDocsPath}}'
+
+    - id: fetchTechDocsTemplate
+      name: Using TechDocs root path?
+      if: ${{ parameters.ensableTechDocs and parameters.techDocsPath == '.' and parameters.techDocsPathType == 'dir' }}
+      action: fetch:template
+      input:
+        url: ./techDocs
+        templateFileExtension: .njk
+        targetPath: ./${{ steps['parse-repo-values'].output.result.repoName }} #TODO: Define your monorepo structure here.
+        values:
+          repoSlug: ${{ parameters.repoSlug }}
+
+    - id: fetchTechDocsTemplate
+      name: Using TechDocs custom path?
+      if: ${{ parameters.ensableTechDocs and parameters.techDocsPath != '.' and parameters.techDocsPathType == 'dir' }}
+      action: fetch:template
+      input:
+        url: ./techDocs
+        templateFileExtension: .njk
+        targetPath: ./${{ steps['parse-repo-values'].output.result.repoName }}/${{parameters.techDocsPath}} #TODO: Define your monorepo structure here.
+        values:
+          repoSlug: ${{ parameters.repoSlug }}
+
+    - id: createPullRequest
+      name: Create Pull Request.
+      action: publish:github:pull-request
+      input:
+        repoUrl: github.com?owner=roadie-demo&repo=catalog-info-monorepo # TODO: Set your owner and repo location for the monorepo.
+        branchName: register-to-catalog-${{ '' | now }}
+        title: Add new entity to monorepo for registration of software to Catalog
+        description: This PR adds a metadata file in a folder about this catalog entity so that it can be registered in our software catalog, with optional integrations and TechDocs.
+  
+  # These are the outputs from the backend steps, and can be displayed in the frontend after completion.
+  output:
+    links:
+      - title: View the pull request on GitHub
+        icon: github
+        url: ${{ steps['createPullRequest'].output.remoteUrl }}
