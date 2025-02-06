@@ -167,10 +167,10 @@ spec:
       name: Create Pull Request.
       action: publish:github:pull-request
       input:
-        repoUrl: ${{ parameters.repoHost }}?owner=${{ steps['parse-repo-values'].output.result.gitHubOrg }}&repo=${{ steps['parse-repo-values'].output.result.repoName }}
+        repoUrl: github.com?owner=roadie-demo&repo=catalog-info-monorepo # TODO: Set your owner and repo location for the monorepo.
         branchName: register-to-catalog-${{ '' | now }}
-        title: Register software to Catalog
-        description: This PR adds a metadata file about this catalog entity so that it can be registered in our software catalog, with optional integrations and TechDocs.
+        title: Add new entity to monorepo for registration of software to Catalog
+        description: This PR adds a metadata file in a folder about this catalog entity so that it can be registered in our software catalog, with optional integrations and TechDocs.
   
   # These are the outputs from the backend steps, and can be displayed in the frontend after completion.
   output:

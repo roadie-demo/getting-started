@@ -40,3 +40,4 @@ Roadie Relationship.
 - [ ] `fetchCatalogTemplate`: Define the monorepo directory structure. Default structure is `/repo-name/`.
 - [ ] `fetchTechDocsTemplate`: Define the monorepo directory structure. Default structure is `/repo-name/`.
 - [ ] `fetchTechDocsTemplate`: Define the monorepo directory structure. Default structure is `/repo-name/`.
+- [ ] `createPullRequest`: Define the monorepo repo owner and repo name
