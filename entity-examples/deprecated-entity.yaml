@@ -1,0 +1,26 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  namespace: default
+  annotations:
+    github.com/owner: roadie-demo
+    github.com/repo: deprecated-entity
+    github.com/project-slug: roadie-demo/tardis
+    backstage.io/techdocs-ref: dir:./docs-wikis/
+    roadie.io/applied-fragments-preprocess: 295619f1-a7b3-4863-af5b-7ea34c60743d:1
+    roadie.io/applied-fragments: 295619f1-a7b3-4863-af5b-7ea34c60743d:1
+  name: internal-testing
+  title: internal-testing
+  description: An internal testing component.
+relations:
+  - type: ownedBy
+    targetRef: group:default/solutions
+spec:
+  type: service
+  lifecycle: deprecated
+  owner: solutions
+status:
+  items:
+    - type: roadie.io/status
+      level: warning
+      message: 'This is an example of a deprecated component.'
