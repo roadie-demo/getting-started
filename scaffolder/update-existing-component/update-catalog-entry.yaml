@@ -53,7 +53,7 @@ spec:
           type: string
         componentDescription:
           title: Component Description
-          description: A Detailed decription allows for the component to be easily found and understood in Roadie Backstage.
+          description: A Detailed description allows for the component to be easily found and understood in Roadie Backstage.
           type: string
 
   # These are the steps that are executed in series in the scaffolder backend.
