@@ -54,7 +54,7 @@ spec:
 
         description:
           title: Component Description
-          decription: A Detailed decription allows for the component to be easily found and understood in Roadie Backstage.
+          description: A Detailed description allows for the component to be easily found and understood in Roadie Backstage.
           type: string
 
         type:

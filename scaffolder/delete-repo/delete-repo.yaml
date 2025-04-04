@@ -3,7 +3,7 @@ kind: Template
 metadata:
   name: delete-repo
   title: Delete a repository.
-  description: "Delete an existing repository in your GitHub organziation."
+  description: "Delete an existing repository in your GitHub organiziation."
 spec:
   owner: group:roadie-demo/solutions # TODO: Define who the owner of this template is. This is likely the team who own the relationship with Roadie. e.g. group:customer-name/platform
   type: service

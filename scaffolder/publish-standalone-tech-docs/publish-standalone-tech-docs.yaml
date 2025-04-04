@@ -37,7 +37,7 @@ spec:
 
         description:
           title: Description
-          decription: A Detailed decription allows for the documentation catalog entry to be easily found and understood in the Roadie Backstage tenant.
+          description: A Detailed description allows for the documentation catalog entry to be easily found and understood in the Roadie Backstage tenant.
           type: string
 
         lifecycle:
