@@ -59,7 +59,7 @@ spec:
       action: http:backstage:request
       input:
         method: 'POST'
-        path: /broker/jenkins-broker/job/${{ steps['get-jenkins-job-name'].output.result.jobName }}/job/main/build
+        path: /proxy/broker/jenkins-broker/job/${{ steps['get-jenkins-job-name'].output.result.jobName }}/job/main/build
         headers:
           content-type: 'application/json'
          
