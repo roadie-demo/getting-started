@@ -54,6 +54,15 @@ spec:
       input:
         message: Running Jenkins Job ${{ steps['get-jenkins-job-name'].output.result.jobName }}
 
+    - id: get-jenkins-crumb
+      name: Get Jenkins Crumb
+      action: http:backstage:request
+      input:
+        method: 'GET'
+        path: /proxy/broker/jenkins-broker/crumbIssuer/api/json
+        headers:
+          content-type: 'application/json'
+    
     - id: trigger-jenkins-job
       name: Trigger Jenkins Job Build
       action: http:backstage:request
@@ -62,6 +71,7 @@ spec:
         path: /proxy/broker/jenkins-broker/job/${{ steps['get-jenkins-job-name'].output.result.jobName }}/job/main/build
         headers:
           content-type: 'application/json'
+          jenkins-crumb: '${{ steps['get-jenkins-crumb'].output.result.crumb }}'
          
     - id: log-result
       action: debug:log
