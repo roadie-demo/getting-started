@@ -67,7 +67,7 @@ spec:
       action: debug:log
       name: Log Entity parsing
       input:
-        message: Get Crumb response is ${{ steps['get-jenkins-crumb'].output.code }}
+        message: Get Crumb response is ${{ steps['get-jenkins-crumb'].output.body }}
 
     - id: trigger-jenkins-job
       name: Trigger Jenkins Job Build
