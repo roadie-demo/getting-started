@@ -1,0 +1,81 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: trigger-jenkins-job-build
+  title: Trigger Jenkins Job Build
+  description: ""
+spec:
+  owner: group:roadie-demo/solutions # TODO: Define who the owner of this template is. This is likely the team who own the relationship with Roadie. e.g. group:customer-name/platform
+  type: service
+
+  # These are the steps which are rendered in the frontend with the form input.
+  parameters:
+    - title: Component Location # Title of the second step.
+      properties:
+        entity:
+          type: string
+          ui:field: EntityPicker
+
+  # These are the steps that are executed in series in the scaffolder backend.
+  steps:
+    - id: log-result
+      action: debug:log
+      name: Log Entity chosen
+      input:
+        message: "${{ parameters.entity }} selected to run Jenkins job build against."
+
+    - id: retrieve-entity-info
+      name: Retrieve Entity information from Roadie
+      action: http:backstage:request
+      input:
+        method: 'GET'
+        path: "/catalog/entities/by-name/${{ parameters.entity | replace(':', '/') }}"
+
+    - id: log-result
+      action: debug:log
+      name: Log identified manifest location
+      input:
+        message: "Retrieving catalog manifest from ${{ steps['retrieve-entity-info'].output.body.metadata.annotations['backstage.io/managed-by-location'] }}"
+
+    - id: get-jenkins-job-name
+      name: Get Jenkins job name
+      action: roadiehq:utils:jsonata
+      input:
+        data: "${{ steps['retrieve-entity-info'].output.body }}"
+        expression: '$.metadata.annotations.(
+                      {
+                          "jobName": $substringAfter($."jenkins.io/job-full-name", ":")
+                      }
+                    )'
+
+    - id: log-result
+      action: debug:log
+      name: Log Entity parsing
+      input:
+        message: Running Jenkins Job ${{ steps['get-jenkins-job-name'].output.result.jobName }}
+
+    - id: get-jenkins-crumb
+      name: Get Jenkins Crumb
+      action: http:backstage:request
+      input:
+        method: 'GET'
+        path: /proxy/broker/jenkins-broker/crumbIssuer/api/json
+        headers:
+          content-type: 'application/json'
+    
+    - id: trigger-jenkins-job
+      name: Trigger Jenkins Job Build
+      action: http:backstage:request
+      input:
+        method: 'POST'
+        path: /proxy/jenkins-broker/jenkins-broker/job/${{ steps['get-jenkins-job-name'].output.result.jobName }}/job/main/build
+        headers:
+          content-type: 'application/json'
+          jenkins-crumb: ${{ steps['get-jenkins-crumb'].output.body.crumb }}
+
+    - id: log-result
+      action: debug:log
+      name: Log Job Run Results
+      input:
+        message: Running Jenkins Job ${{ steps['trigger-jenkins-job'].output.result }}
+ 
