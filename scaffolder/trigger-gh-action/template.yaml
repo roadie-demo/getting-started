@@ -11,6 +11,8 @@ spec:
   # These are the steps which are rendered in the frontend with the form input.
   parameters:
     - title: Select Component # Title of the second step.
+      required:
+        - entity
       properties:
         entity:
           type: string
@@ -23,6 +25,8 @@ spec:
             labelSelector: 'metadata.name'
 
     - title: Select Workflow # Title of the second step.
+      required:
+        - workflow
       properties:
         workflow:
           type: string
@@ -31,10 +35,9 @@ spec:
             title: Workflows
             description: Choose the workflow to be run.
             path: "proxy/github/api/repos/{{ parameters.entity }}/actions/workflows"
-            responseMapping:
-              arrayField: "workflows"
-              labelField: "name"
-              valueField: "path"
+            arraySelector: "workflows"
+            labelSelector: "name"
+            valueSelector: "path"
 
 
   # These are the steps that are executed in series in the scaffolder backend.
@@ -62,17 +65,25 @@ spec:
       action: roadiehq:utils:jsonata
       input:
         data: "${{ parameters.workflow }}"
-        expression: '$.(
-                      $pathParts := $split($, "/")
+        expression: '(
+                      $pathParts := $split($, "/");
+                      $length := $count($split($, "/"));
                       {
-                        fileName: $pathParts.[$count($pathParts) - 1]
+                          "name": $pathParts[$length - 1]
                       }
                     )'
+
+
+    - id: log-result
+      action: debug:log
+      name: Log Workflow Name
+      input:
+        message: "Workflow Name: ${{ steps['parse-workflow-file-name'].output.result.name }}"
 
     - id: trigger-gh-action
       name: Trigger GH Action
       action: github:actions:dispatch
       input:
         repoUrl: github.com?owner=${{ steps['split-slug'].output.result.owner }}&repo=${{ steps['split-slug'].output.result.repo }}
-        workflowId: ${{ steps['parse-workflow-file-name'].output.result.fileName
+        workflowId: ${{ steps['parse-workflow-file-name'].output.result.name }}
         branchOrTagName: 'main'
