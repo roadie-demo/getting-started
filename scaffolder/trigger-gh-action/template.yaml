@@ -10,18 +10,34 @@ spec:
 
   # These are the steps which are rendered in the frontend with the form input.
   parameters:
-    - title: Component Location # Title of the second step.
+    - title: Select Component # Title of the second step.
+      required:
+        - entity
       properties:
         entity:
           type: string
-          ui:field: EntityPicker
+          ui:field: SelectFieldFromApi
+          ui:options:
+            path: "catalog/entities"
+            params:
+              filter: 'kind=component,metadata.annotations.github.com/project-slug'
+            valueSelector: "metadata.annotations['github.com/project-slug']"
+            labelSelector: 'metadata.name'
 
+    - title: Select Workflow # Title of the second step.
+      required:
+        - workflow
+      properties:
         workflow:
-          title: Workflow
-          description: Select the workflow you would like to run.
           type: string
-          enum:
-            - 'manual.yml'
+          ui:field: SelectFieldFromApi
+          ui:options:
+            title: Workflows
+            description: Choose the workflow to be run.
+            path: "proxy/github/api/repos/{{ parameters.entity }}/actions/workflows"
+            arraySelector: "workflows"
+            labelSelector: "name"
+            valueSelector: "path"
 
 
   # These are the steps that are executed in series in the scaffolder backend.
@@ -32,44 +48,42 @@ spec:
       input:
         message: "${{ parameters.entity }} selected to run GH Action against."
 
-    - id: retrieve-entity-info
-      name: Retrieve Entity information from Roadie
-      action: http:backstage:request
-      input:
-        method: 'GET'
-        path: "/catalog/entities/by-name/${{ parameters.entity | replace(':', '/') }}"
-
-    - id: log-result
-      action: debug:log
-      name: Log identified manifest location
-      input:
-        message: "Retrieving catalog manifest from ${{ steps['retrieve-entity-info'].output.body.metadata.annotations['backstage.io/managed-by-location'] }}"
-
-    - id: identify-repo-and-owner
-      name: Identify repository and owner
+    - id: split-slug
+      name: Split the slug into owner and repo
       action: roadiehq:utils:jsonata
       input:
-        data: "${{ steps['retrieve-entity-info'].output.body }}"
-        expression: '$.metadata.annotations.(
-                      $slug := $substringAfter($."backstage.io/managed-by-location", "url:https://github.com/");
-                      $owner := $substringBefore($slug, "/");
+        data: "${{ parameters.entity }}"
+        expression: '$.(
                       {
-                          "slug": $slug,
-                          "owner": $owner,
-                          "repo": $substringBefore($substringAfter($slug & $owner & "/", "/"), "/")
+                          "owner": $substringBefore($, "/"),
+                          "repo": $substringAfter($, "/")
                       }
                     )'
 
+    - id: parse-workflow-file-name
+      name: Parse workflow file name
+      action: roadiehq:utils:jsonata
+      input:
+        data: "${{ parameters.workflow }}"
+        expression: '(
+                      $pathParts := $split($, "/");
+                      $length := $count($split($, "/"));
+                      {
+                          "name": $pathParts[$length - 1]
+                      }
+                    )'
+
+
     - id: log-result
       action: debug:log
-      name: Log Entity parsing
+      name: Log Workflow Name
       input:
-        message: Running GH Action against repo ${{ steps['identify-repo-and-owner'].output.result.repo }} owned by ${{ steps['identify-repo-and-owner'].output.result.owner }}
+        message: "Workflow Name: ${{ steps['parse-workflow-file-name'].output.result.name }}"
 
     - id: trigger-gh-action
       name: Trigger GH Action
       action: github:actions:dispatch
       input:
-        repoUrl: github.com?owner=${{ steps['identify-repo-and-owner'].output.result.owner }}&repo=${{ steps['identify-repo-and-owner'].output.result.repo }}
-        workflowId: ${{ parameters.workflow }}
+        repoUrl: github.com?owner=${{ steps['split-slug'].output.result.owner }}&repo=${{ steps['split-slug'].output.result.repo }}
+        workflowId: ${{ steps['parse-workflow-file-name'].output.result.name }}
         branchOrTagName: 'main'
