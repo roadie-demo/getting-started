@@ -31,8 +31,10 @@ spec:
             title: Workflows
             description: Choose the workflow to be run.
             path: "proxy/github/api/repos/{{ parameters.entity }}/actions/workflows"
-            valueSelector: "workflows.[].['name']"
-            labelSelector: "workflows.[].['path']"
+            responseMapping:
+              arrayField: "workflows"
+              labelField: "name"
+              valueField: "path"
 
 
   # These are the steps that are executed in series in the scaffolder backend.
