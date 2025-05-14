@@ -151,12 +151,6 @@ spec:
           techDocsPath: '${{parameters.techDocsPathType}}:${{parameters.techDocsPath}}'
           entityTags: '${{parameters.entityTags}}'
 
-    - id: log-result
-      action: debug:log
-      name: Log Tags
-      input:
-        message: "${{ parameters.entityTags | dump }}"
-
     - id: fetchTechDocsTemplate
       name: Using TechDocs root path?
       if: ${{ parameters.ensableTechDocs and parameters.techDocsPath == '.' and parameters.techDocsPathType == 'dir' }}
