@@ -48,6 +48,10 @@ spec:
             catalogFilter:
               kind: Group # TODO: Decide if you want to allow setting owner by user, group, or both. e.g. [Group, User]
 
+        entityTags:
+          type: array
+          ui:field: EntityTagsPicker
+
     - title: Component Location # Title of the second step.
       required:
         - repoSlug
@@ -74,10 +78,6 @@ spec:
           title: Page Number
           type: number
           default: 1
-
-        entityTags:
-          type: array
-          ui:field: EntityTagsPicker
 
     - title: Integrations (optional) # Title of the third step.
       properties: #TODO: Specify any additional integrations associated with your repos.
@@ -149,6 +149,13 @@ spec:
           pagerdutyServiceId: ${{ parameters.pagerdutyServiceId }}
           lifecycle: ${{ parameters.lifecycle }}
           techDocsPath: '${{parameters.techDocsPathType}}:${{parameters.techDocsPath}}'
+          entityTags: '${{parameters.entityTags}}'
+
+    - id: log-result
+      action: debug:log
+      name: Log Tags
+      input:
+        message: "${{ parameters.entityTags | dump }}"
 
     - id: fetchTechDocsTemplate
       name: Using TechDocs root path?

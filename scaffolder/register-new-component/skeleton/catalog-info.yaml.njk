@@ -9,6 +9,9 @@ metadata:
     {%if values.techDocsPath %}backstage.io/techdocs-ref: ${{values.techDocsPath}} {% endif %}
     {%if values.argoAppName %}argocd/app-name: ${{values.argoAppName}} {% endif %}
     {%if values.pagerdutyServiceId %}pagerduty.com/service-id: ${{values.pagerdutyServiceId}} {% endif %}
+  tags:
+    {% for i in values.entityTags %} - ${{ i }}
+    {% endfor %}
 spec:
   type: ${{ values.type }}
   owner: ${{ values.owner }}
