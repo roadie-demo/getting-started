@@ -81,17 +81,17 @@ spec:
           title: PagerDuty Service ID
           type: string
 
-        ensableTechDocs:
+        enableTechDocs:
           title: Enable TechDocs
           default: true
           type: boolean
 
       if:
         properties:
-          ensableTechDocs:
+          enableTechDocs:
             const: true
         required:
-        - ensableTechDocs
+        - enableTechDocs
       then:
         properties:
           techDocsPathType:
@@ -152,7 +152,7 @@ spec:
 
     - id: fetchTechDocsTemplate
       name: Using TechDocs root path?
-      if: ${{ parameters.ensableTechDocs and parameters.techDocsPath == '.' and parameters.techDocsPathType == 'dir' }}
+      if: ${{ parameters.enableTechDocs and parameters.techDocsPath == '.' and parameters.techDocsPathType == 'dir' }}
       action: fetch:template
       input:
         url: ./techDocs
@@ -162,7 +162,7 @@ spec:
 
     - id: fetchTechDocsTemplate
       name: Using TechDocs custom path?
-      if: ${{ parameters.ensableTechDocs and parameters.techDocsPath != '.' and parameters.techDocsPathType == 'dir' }}
+      if: ${{ parameters.enableTechDocs and parameters.techDocsPath != '.' and parameters.techDocsPathType == 'dir' }}
       action: fetch:template
       input:
         url: ./techDocs
