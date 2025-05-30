@@ -65,19 +65,11 @@ spec:
           type: string
           ui:field: SelectFieldFromApi
           ui:options:
-            title: Repository
-            description: Choose the repository to be registered in your catalog.
-            path: "proxy/github/api/orgs/roadie-demo/repos" # TODO: Add the name of your GitHub org. e.g. `/orgs/{reporOrg}/repos`
+            path: "catalog/entities"
             params:
-              per_page: '100'
-              page: '{{ parameters.repoPage }}'
-            valueSelector: "full_name"
-            labelSelector: "name"
-
-        repoPage:
-          title: Page Number
-          type: number
-          default: 1
+              filter: 'kind=repository'
+            valueSelector: "metadata.annotations['github.com/project-slug']"
+            labelSelector: 'metadata.name'
 
     - title: Integrations (optional) # Title of the third step.
       properties: #TODO: Specify any additional integrations associated with your repos.
@@ -133,6 +125,13 @@ spec:
                           'repoName': $Name
                         }
                       )"
+                    
+    - id: log-result
+      action: debug:log
+      name: Log Entity chosen
+      input:
+        message: "${{ parameters.repoSlug }} parsed into ${{ steps['parse-repo-values'].output.result.gitHubOrg }} and ${{ steps['parse-repo-values'].output.result.repoName }}."
+
     - id: fetchCatalogTemplate
       name: Fetch the catalog-info.yaml file.
       action: fetch:template
