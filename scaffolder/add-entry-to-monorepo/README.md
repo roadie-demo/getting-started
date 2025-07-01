@@ -1,4 +1,4 @@
-# Register New Component Template
+# Add Entry to Monorepo
 
 ## Outline
 The template allows for quickly and efficiently adding a new entry to an existing Monorepo with the repo name being the folder, for registration to the Roadie Backstage catalog by adding and configuring the `catalog-info.yaml` with the recommended data points necessary for the entity to be listed in the catalog, as well as enabling TechDocs. Optionally, you are able to configure additional integrations such as ArgoCD or Pager Duty.
