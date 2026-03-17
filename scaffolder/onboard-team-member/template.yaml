@@ -1,0 +1,233 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: onboard-team-member
+  title: Onboard New Team Member
+  description: >
+    Automate developer onboarding: add to GitHub team, trigger GCP IAM
+    provisioning, open a Jira ticket for laptop/access requests, and
+    send a welcome notification. Reduces time-to-first-commit.
+  tags:
+    - onboarding
+    - self-service
+    - recommended
+spec:
+  owner: group:roadie-demo/solutions
+  type: service
+
+  parameters:
+    - title: New Team Member Details
+      required:
+        - fullName
+        - githubUsername
+        - email
+        - role
+      properties:
+        fullName:
+          title: Full Name
+          type: string
+          description: The new team member's full name.
+          ui:autofocus: true
+
+        githubUsername:
+          title: GitHub Username
+          type: string
+          description: Their GitHub handle (without the @).
+          pattern: '^[a-zA-Z0-9-]+$'
+
+        email:
+          title: Corporate Email
+          type: string
+          format: email
+          description: Their corporate email address.
+
+        role:
+          title: Role
+          type: string
+          description: >
+            The new member's role. This determines which tools
+            and access levels are provisioned.
+          ui:field: SelectFieldFromApi
+          ui:options:
+            path: catalog/entity-facets
+            params:
+              facet: spec.type
+              filter: kind=Component
+            arraySelector: facets.spec.type
+            valueSelector: value
+            labelTemplate: '{{ item.value }} ({{ item.count }})'
+
+    - title: Team & Access
+      required:
+        - team
+        - gcpProject
+      properties:
+        gitHubOrg:
+          type: string
+          default: roadie-demo # TODO: Set to the customer's GitHub org
+          ui:widget: hidden
+
+        team:
+          title: Team
+          type: string
+          description: The Backstage group (GitHub team) to add this person to.
+          ui:field: OwnerPicker
+          ui:options:
+            allowArbitraryValues: false
+            catalogFilter:
+              - kind: Group
+                spec.type: team
+
+        gcpProject:
+          title: GCP Project
+          type: string
+          description: The GCP project to grant access to.
+          ui:field: SelectFieldFromApi
+          ui:options:
+            path: catalog/entities
+            params:
+              filter: kind=Resource
+            valueSelector: metadata.name
+            labelSelector: metadata.title
+
+        gcpRole:
+          title: GCP IAM Role
+          type: string
+          description: The IAM role to assign in the GCP project.
+          default: roles/viewer
+          enum:
+            - roles/viewer
+            - roles/editor
+            - roles/container.developer
+            - roles/cloudsql.client
+          enumNames:
+            - Viewer (read-only)
+            - Editor (read-write)
+            - GKE Developer
+            - Cloud SQL Client
+
+    - title: Additional Provisioning
+      properties:
+        requestLaptop:
+          title: Request new laptop
+          type: boolean
+          default: false
+          description: Open a Jira ticket for IT to provision a new laptop.
+
+        jiraProject:
+          title: Jira Project Key
+          type: string
+          default: IT
+          description: The Jira project to create the provisioning ticket in.
+
+        startDate:
+          title: Start Date
+          type: string
+          description: When does this person start? (YYYY-MM-DD)
+
+        additionalNotes:
+          title: Additional Notes
+          type: string
+          ui:widget: textarea
+          description: Any extra context for the onboarding (e.g. specific tools needed).
+
+  steps:
+    - id: log-input
+      name: Log onboarding request
+      action: debug:log
+      input:
+        message: >
+          Onboarding ${{ parameters.fullName }} (@${{ parameters.githubUsername }})
+          as ${{ parameters.role }} to team ${{ parameters.team }}
+          in GCP project ${{ parameters.gcpProject }}.
+
+    # Step 1: Extract the GitHub team slug from the Backstage group ref
+    - id: parse-team
+      name: Parse team name from group reference
+      action: roadiehq:utils:jsonata
+      input:
+        data: ${{ parameters.team }}
+        expression: >
+          $substringAfter($, "/")
+
+    # Step 2: Add user to the GitHub team
+    - id: add-to-github-team
+      name: Add to GitHub team
+      action: http:backstage:request
+      input:
+        method: PUT
+        path: /proxy/github/api/orgs/${{ parameters.gitHubOrg }}/teams/${{ steps['parse-team'].output.result }}/memberships/${{ parameters.githubUsername }}
+        headers:
+          content-type: application/json
+        body:
+          role: member
+
+    - id: log-github-result
+      name: Log GitHub team addition result
+      action: debug:log
+      input:
+        message: >
+          GitHub API response: ${{ steps['add-to-github-team'].output.code }}
+          for adding ${{ parameters.githubUsername }} to ${{ steps['parse-team'].output.result }}.
+
+    # Step 3: Trigger GCP IAM provisioning via GitHub Actions workflow
+    - id: trigger-gcp-iam
+      name: Trigger GCP IAM provisioning
+      action: github:actions:dispatch
+      input:
+        repoUrl: github.com?owner=${{ parameters.gitHubOrg }}&repo=infrastructure-iam
+        workflowId: grant-iam-access.yaml
+        branchOrTagName: main
+        workflowInputs:
+          email: ${{ parameters.email }}
+          gcp_project: ${{ parameters.gcpProject }}
+          iam_role: ${{ parameters.gcpRole }}
+          requested_by: ${{ user.entity.metadata.name }}
+
+    # Step 4: Create Jira ticket for laptop provisioning (if requested)
+    - id: create-jira-ticket
+      name: Create Jira provisioning ticket
+      if: ${{ parameters.requestLaptop }}
+      action: http:backstage:request
+      input:
+        method: POST
+        path: /proxy/jira/api/rest/api/2/issue
+        headers:
+          content-type: application/json
+        body:
+          fields:
+            project:
+              key: ${{ parameters.jiraProject }}
+            summary: "[Onboarding] Laptop request for ${{ parameters.fullName }}"
+            description: >
+              New team member onboarding request.
+
+              Name: ${{ parameters.fullName }}
+              Email: ${{ parameters.email }}
+              Role: ${{ parameters.role }}
+              Team: ${{ parameters.team }}
+              Start Date: ${{ parameters.startDate }}
+
+              Notes: ${{ parameters.additionalNotes }}
+            issuetype:
+              name: Task
+
+    # Step 5: Log completion summary
+    - id: log-summary
+      name: Onboarding summary
+      action: debug:log
+      input:
+        message: >
+          Onboarding complete for ${{ parameters.fullName }}:
+          - GitHub team: ${{ steps['parse-team'].output.result }} (status: ${{ steps['add-to-github-team'].output.code }})
+          - GCP IAM: workflow dispatched for ${{ parameters.gcpProject }}
+          - Laptop request: ${{ parameters.requestLaptop }}
+
+  output:
+    links:
+      - title: View GitHub Team
+        icon: github
+        url: https://github.com/orgs/${{ parameters.gitHubOrg }}/teams/${{ steps['parse-team'].output.result }}/members
+      - title: View GCP IAM Workflow Runs
+        icon: cloud
+        url: https://github.com/${{ parameters.gitHubOrg }}/infrastructure-iam/actions/workflows/grant-iam-access.yaml

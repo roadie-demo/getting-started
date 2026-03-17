@@ -1,0 +1,27 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ${{ values.serviceName }}
+  title: ${{ values.serviceName }}
+  description: ${{ values.description }}
+  annotations:
+    github.com/project-slug: ${{ values.repoSlug }}
+    backstage.io/techdocs-ref: dir:.
+    {%- if values.argoAppName %}
+    argocd/app-name: ${{ values.argoAppName }}
+    {%- endif %}
+    {%- if values.pagerdutyServiceId %}
+    pagerduty.com/service-id: ${{ values.pagerdutyServiceId }}
+    {%- endif %}
+  tags:
+    - ${{ values.language }}
+    - gcp
+  links:
+    - url: https://console.cloud.google.com/home/dashboard?project=${{ values.gcpProject }}
+      title: GCP Console
+      icon: cloud
+spec:
+  type: service
+  owner: ${{ values.owner }}
+  lifecycle: production
+  system: ${{ values.platformDomain }}

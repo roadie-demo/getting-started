@@ -1,0 +1,26 @@
+# ${{ values.serviceName }}
+
+${{ values.description }}
+
+## Quick Start
+
+This service was created using the **GCP Microservice Golden Path** template. It includes:
+
+- Standardized CI/CD via GitHub Actions
+- ArgoCD GitOps deployment
+- TechDocs documentation
+- Catalog registration with Roadie Backstage
+
+## Ownership
+
+| Field | Value |
+|-------|-------|
+| Owner | ${{ values.owner }} |
+| GCP Project | ${{ values.gcpProject }} |
+| Language | ${{ values.language }} |
+| Platform Domain | ${{ values.platformDomain }} |
+
+## Links
+
+- [GCP Console](https://console.cloud.google.com/home/dashboard?project=${{ values.gcpProject }})
+- [GitHub Repository](https://github.com/${{ values.repoSlug }})

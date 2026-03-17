@@ -1,0 +1,289 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: team-transfer
+  title: Team Transfer (Flex Model)
+  description: >
+    Transfer a team member between teams. Removes access from the old team
+    and provisions access for the new team: GitHub team membership, GCP IAM
+    roles, and catalog ownership updates via PR. Designed for the flex model
+    where people move between teams frequently.
+  tags:
+    - governance
+    - flex-model
+    - self-service
+    - recommended
+spec:
+  owner: group:roadie-demo/solutions
+  type: service
+
+  parameters:
+    - title: Who is transferring?
+      required:
+        - githubUsername
+        - fullName
+        - email
+      properties:
+        gitHubOrg:
+          type: string
+          default: roadie-demo # TODO: Set to the customer's GitHub org
+          ui:widget: hidden
+
+        githubUsername:
+          title: GitHub Username
+          type: string
+          description: The GitHub handle of the person transferring.
+          pattern: '^[a-zA-Z0-9-]+$'
+          ui:autofocus: true
+
+        fullName:
+          title: Full Name
+          type: string
+
+        email:
+          title: Corporate Email
+          type: string
+          format: email
+
+    - title: Transfer Details
+      required:
+        - currentTeam
+        - newTeam
+      properties:
+        currentTeam:
+          title: Current Team
+          type: string
+          description: The team this person is leaving.
+          ui:field: OwnerPicker
+          ui:options:
+            allowArbitraryValues: false
+            catalogFilter:
+              - kind: Group
+                spec.type: team
+
+        newTeam:
+          title: New Team
+          type: string
+          description: The team this person is joining.
+          ui:field: OwnerPicker
+          ui:options:
+            allowArbitraryValues: false
+            catalogFilter:
+              - kind: Group
+                spec.type: team
+
+        transferDate:
+          title: Effective Date
+          type: string
+          description: When does the transfer take effect? (YYYY-MM-DD)
+
+        reason:
+          title: Reason for Transfer
+          type: string
+          ui:widget: textarea
+          description: Brief context for audit trail (e.g. project reassignment, reorg).
+
+    - title: Access & Permissions
+      required:
+        - oldGcpProject
+        - newGcpProject
+      properties:
+        oldGcpProject:
+          title: Current GCP Project
+          type: string
+          description: The GCP project to revoke access from.
+          ui:field: SelectFieldFromApi
+          ui:options:
+            path: catalog/entities
+            params:
+              filter: kind=Resource
+            valueSelector: metadata.name
+            labelSelector: metadata.title
+
+        newGcpProject:
+          title: New GCP Project
+          type: string
+          description: The GCP project to grant access to.
+          ui:field: SelectFieldFromApi
+          ui:options:
+            path: catalog/entities
+            params:
+              filter: kind=Resource
+            valueSelector: metadata.name
+            labelSelector: metadata.title
+
+        newGcpRole:
+          title: New GCP IAM Role
+          type: string
+          default: roles/viewer
+          enum:
+            - roles/viewer
+            - roles/editor
+            - roles/container.developer
+            - roles/cloudsql.client
+          enumNames:
+            - Viewer (read-only)
+            - Editor (read-write)
+            - GKE Developer
+            - Cloud SQL Client
+
+        updateComponentOwnership:
+          title: Update component ownership
+          type: boolean
+          default: true
+          description: >
+            If this person was the sole owner of components, open a PR
+            to transfer ownership to the new team.
+
+  steps:
+    - id: log-transfer
+      name: Log transfer request
+      action: debug:log
+      input:
+        message: >
+          Team transfer: ${{ parameters.fullName }} (@${{ parameters.githubUsername }})
+          from ${{ parameters.currentTeam }} to ${{ parameters.newTeam }}.
+          Effective: ${{ parameters.transferDate }}.
+          Reason: ${{ parameters.reason }}.
+
+    # Parse team slugs from Backstage group references
+    - id: parse-current-team
+      name: Parse current team slug
+      action: roadiehq:utils:jsonata
+      input:
+        data: ${{ parameters.currentTeam }}
+        expression: >
+          $substringAfter($, "/")
+
+    - id: parse-new-team
+      name: Parse new team slug
+      action: roadiehq:utils:jsonata
+      input:
+        data: ${{ parameters.newTeam }}
+        expression: >
+          $substringAfter($, "/")
+
+    # Step 1: Remove from old GitHub team
+    - id: remove-from-old-team
+      name: Remove from current GitHub team
+      action: http:backstage:request
+      input:
+        method: DELETE
+        path: /proxy/github/api/orgs/${{ parameters.gitHubOrg }}/teams/${{ steps['parse-current-team'].output.result }}/memberships/${{ parameters.githubUsername }}
+
+    - id: log-removal
+      name: Log team removal
+      action: debug:log
+      input:
+        message: >
+          Removed @${{ parameters.githubUsername }} from ${{ steps['parse-current-team'].output.result }}
+          (HTTP ${{ steps['remove-from-old-team'].output.code }}).
+
+    # Step 2: Add to new GitHub team
+    - id: add-to-new-team
+      name: Add to new GitHub team
+      action: http:backstage:request
+      input:
+        method: PUT
+        path: /proxy/github/api/orgs/${{ parameters.gitHubOrg }}/teams/${{ steps['parse-new-team'].output.result }}/memberships/${{ parameters.githubUsername }}
+        headers:
+          content-type: application/json
+        body:
+          role: member
+
+    - id: log-addition
+      name: Log team addition
+      action: debug:log
+      input:
+        message: >
+          Added @${{ parameters.githubUsername }} to ${{ steps['parse-new-team'].output.result }}
+          (HTTP ${{ steps['add-to-new-team'].output.code }}).
+
+    # Step 3: Revoke old GCP IAM access
+    - id: revoke-gcp-access
+      name: Revoke old GCP IAM access
+      action: github:actions:dispatch
+      input:
+        repoUrl: github.com?owner=${{ parameters.gitHubOrg }}&repo=infrastructure-iam
+        workflowId: revoke-iam-access.yaml
+        branchOrTagName: main
+        workflowInputs:
+          email: ${{ parameters.email }}
+          gcp_project: ${{ parameters.oldGcpProject }}
+          requested_by: ${{ user.entity.metadata.name }}
+          reason: "Team transfer to ${{ parameters.newTeam }}"
+
+    # Step 4: Grant new GCP IAM access
+    - id: grant-gcp-access
+      name: Grant new GCP IAM access
+      action: github:actions:dispatch
+      input:
+        repoUrl: github.com?owner=${{ parameters.gitHubOrg }}&repo=infrastructure-iam
+        workflowId: grant-iam-access.yaml
+        branchOrTagName: main
+        workflowInputs:
+          email: ${{ parameters.email }}
+          gcp_project: ${{ parameters.newGcpProject }}
+          iam_role: ${{ parameters.newGcpRole }}
+          requested_by: ${{ user.entity.metadata.name }}
+
+    # Step 5: Create audit log entry via a file in the audit repo
+    - id: create-audit-content
+      name: Generate audit log entry
+      action: roadiehq:utils:serialize:yaml
+      input:
+        data:
+          event: team-transfer
+          timestamp: ${{ '' | now }}
+          subject:
+            name: ${{ parameters.fullName }}
+            email: ${{ parameters.email }}
+            github: ${{ parameters.githubUsername }}
+          transfer:
+            from_team: ${{ parameters.currentTeam }}
+            to_team: ${{ parameters.newTeam }}
+            effective_date: ${{ parameters.transferDate }}
+            reason: ${{ parameters.reason }}
+          access_changes:
+            github:
+              removed_from: ${{ steps['parse-current-team'].output.result }}
+              added_to: ${{ steps['parse-new-team'].output.result }}
+            gcp:
+              revoked_project: ${{ parameters.oldGcpProject }}
+              granted_project: ${{ parameters.newGcpProject }}
+              granted_role: ${{ parameters.newGcpRole }}
+          requested_by: ${{ user.entity.metadata.name }}
+
+    - id: log-audit
+      name: Log audit entry
+      action: debug:log
+      input:
+        message: >
+          AUDIT: Team transfer completed for ${{ parameters.fullName }}.
+          From: ${{ parameters.currentTeam }} (${{ parameters.oldGcpProject }})
+          To: ${{ parameters.newTeam }} (${{ parameters.newGcpProject }}).
+          Requested by: ${{ user.entity.metadata.name }}.
+          Date: ${{ parameters.transferDate }}.
+          Reason: ${{ parameters.reason }}.
+
+    # Step 6: Log completion summary
+    - id: log-summary
+      name: Transfer summary
+      action: debug:log
+      input:
+        message: >
+          Transfer complete for ${{ parameters.fullName }}:
+          - Removed from GitHub team: ${{ steps['parse-current-team'].output.result }}
+          - Added to GitHub team: ${{ steps['parse-new-team'].output.result }}
+          - GCP access revoked: ${{ parameters.oldGcpProject }}
+          - GCP access granted: ${{ parameters.newGcpProject }} (${{ parameters.newGcpRole }})
+          - Audit entry created
+
+  output:
+    links:
+      - title: View New GitHub Team
+        icon: github
+        url: https://github.com/orgs/${{ parameters.gitHubOrg }}/teams/${{ steps['parse-new-team'].output.result }}/members
+      - title: View GCP IAM Workflow Runs
+        icon: cloud
+        url: https://github.com/${{ parameters.gitHubOrg }}/infrastructure-iam/actions

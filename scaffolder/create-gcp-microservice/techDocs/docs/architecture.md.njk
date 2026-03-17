@@ -1,0 +1,22 @@
+# Architecture
+
+## Overview
+
+```mermaid
+graph TD
+    A[Client] --> B[Cloud Load Balancer]
+    B --> C[${{ values.serviceName }}]
+    C --> D[Cloud SQL / Firestore]
+    C --> E[Pub/Sub]
+```
+
+## Infrastructure
+
+- **Runtime**: GCP Cloud Run / GKE
+- **Language**: ${{ values.language }}
+- **GCP Project**: `${{ values.gcpProject }}`
+- **Deployment**: GitOps via ArgoCD
+
+## Dependencies
+
+Document your service dependencies here.

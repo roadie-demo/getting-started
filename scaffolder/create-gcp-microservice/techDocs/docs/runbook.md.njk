@@ -1,0 +1,26 @@
+# Runbook
+
+## Alerts
+
+Document alerting and escalation procedures here.
+
+## Common Issues
+
+### Service not responding
+
+1. Check the GCP Console: [Link](https://console.cloud.google.com/home/dashboard?project=${{ values.gcpProject }})
+2. Review recent deployments in ArgoCD
+3. Check logs in Cloud Logging
+
+### High latency
+
+1. Check resource utilization in GCP Monitoring
+2. Review recent changes via `git log`
+3. Scale up if needed via ArgoCD
+
+## Contacts
+
+- **Owning team**: ${{ values.owner }}
+{%- if values.pagerdutyServiceId %}
+- **PagerDuty**: [Service](https://roadie.pagerduty.com/services/${{ values.pagerdutyServiceId }})
+{%- endif %}

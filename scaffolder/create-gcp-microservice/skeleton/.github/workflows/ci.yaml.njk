@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  GCP_PROJECT: ${{ values.gcpProject }}
+  SERVICE_NAME: ${{ values.serviceName }}
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/${{ "{{ env.GCP_PROJECT }}" }}/locations/global/workloadIdentityPools/github-pool/providers/github-provider
+          service_account: github-actions@${{ "{{ env.GCP_PROJECT }}" }}.iam.gserviceaccount.com
+
+{%- if values.language == "go" %}
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Build
+        run: go build ./...
+
+      - name: Test
+        run: go test ./... -v
+{%- elif values.language == "java" %}
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Build & Test
+        run: ./gradlew build test
+{%- elif values.language == "python" %}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Test
+        run: pytest
+{%- elif values.language == "nodejs" %}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install & Test
+        run: |
+          npm ci
+          npm test
+{%- endif %}
+
+  deploy:
+    needs: build-and-test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy via ArgoCD sync
+        run: echo "ArgoCD will auto-sync from this commit"
