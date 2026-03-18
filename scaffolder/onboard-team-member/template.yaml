@@ -21,7 +21,6 @@ spec:
         - fullName
         - githubUsername
         - email
-        - role
       properties:
         fullName:
           title: Full Name
