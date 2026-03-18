@@ -41,22 +41,6 @@ spec:
           format: email
           description: Their corporate email address.
 
-        role:
-          title: Role
-          type: string
-          description: >
-            The new member's role. This determines which tools
-            and access levels are provisioned.
-          ui:field: SelectFieldFromApi
-          ui:options:
-            path: catalog/entity-facets
-            params:
-              facet: spec.type
-              filter: kind=Component
-            arraySelector: facets.spec.type
-            valueSelector: value
-            labelTemplate: '{{ item.value }} ({{ item.count }})'
-
     - title: Team & Access
       required:
         - team
