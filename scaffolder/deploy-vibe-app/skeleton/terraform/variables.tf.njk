@@ -1,0 +1,17 @@
+variable "app_name" {
+  description = "Application name, used as a prefix for all resources"
+  type        = string
+  default     = "${{ values.appName | replace(" ", "-") | lower }}"
+}
+
+variable "aws_region" {
+  description = "AWS region to deploy into"
+  type        = string
+  default     = "${{ values.awsRegion }}"
+}
+
+variable "table_name" {
+  description = "DynamoDB table name"
+  type        = string
+  default     = "${{ values.tableName }}"
+}

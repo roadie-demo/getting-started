@@ -1,0 +1,72 @@
+# ${{ values.appName }}
+
+${{ values.description }}
+
+## Architecture
+
+```
+CloudFront (${{ values.awsRegion }})
+  ├── /*         → S3 bucket (Next.js static export)
+  └── /api/*     → API Gateway HTTP API → Lambda → DynamoDB (${{ values.tableName }})
+```
+
+No CORS configuration needed — CloudFront proxies all traffic under a single domain.
+
+## Local Development
+
+### Prerequisites
+
+- Node.js 20+
+- AWS credentials configured (for Lambda dev/test)
+
+### Run the frontend
+
+```bash
+npm install --registry=https://registry.npmjs.org/
+npm run dev
+```
+
+The Next.js dev server starts at `http://localhost:3000`.
+
+### Lambda local testing
+
+You can invoke the Lambda handler directly with a mock event:
+
+```js
+import { handler } from './lambda/index.mjs'
+
+const event = {
+  requestContext: { http: { method: 'GET', path: '/api/items' } },
+}
+
+console.log(await handler(event))
+```
+
+Set `TABLE_NAME` environment variable to your DynamoDB table name.
+
+## Deployment
+
+Push to `main` — the GitHub Actions workflow will:
+
+1. Run `terraform apply` to provision/update AWS resources
+2. Build the Next.js app (`next build`) and sync the `out/` export to S3
+3. Invalidate the CloudFront cache
+4. Deploy the Lambda function
+
+### Required GitHub secret
+
+| Secret | Description |
+|--------|-------------|
+| `AWS_DEPLOY_ROLE_ARN` | IAM role ARN with permissions to deploy all resources |
+
+## Infrastructure
+
+All infrastructure is defined in `terraform/`:
+
+| File | Contents |
+|------|----------|
+| `providers.tf` | AWS + archive providers |
+| `backend.tf` | S3 remote state backend |
+| `variables.tf` | Input variables |
+| `main.tf` | All resources (S3, CloudFront, API GW, Lambda, DynamoDB, IAM) |
+| `outputs.tf` | CloudFront domain, S3 bucket, table name, etc. |

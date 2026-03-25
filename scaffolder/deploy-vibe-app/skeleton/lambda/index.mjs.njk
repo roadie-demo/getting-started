@@ -1,0 +1,39 @@
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
+import { DynamoDBDocumentClient, PutCommand, ScanCommand } from '@aws-sdk/lib-dynamodb'
+import { randomUUID } from 'node:crypto'
+
+const client = DynamoDBDocumentClient.from(new DynamoDBClient({}))
+const TABLE_NAME = process.env.TABLE_NAME
+
+const headers = { 'Content-Type': 'application/json' }
+
+export const handler = async (event) => {
+  const method = event.requestContext?.http?.method ?? event.httpMethod
+  const path = event.requestContext?.http?.path ?? event.path
+
+  try {
+    if (method === 'GET' && path === '/api/items') {
+      const result = await client.send(new ScanCommand({ TableName: TABLE_NAME }))
+      const items = (result.Items ?? []).sort((a, b) =>
+        new Date(b.createdAt) - new Date(a.createdAt)
+      )
+      return { statusCode: 200, headers, body: JSON.stringify({ items }) }
+    }
+
+    if (method === 'POST' && path === '/api/items') {
+      const body = JSON.parse(event.body ?? '{}')
+      const text = (body.text ?? '').trim()
+      if (!text) {
+        return { statusCode: 400, headers, body: JSON.stringify({ error: 'text is required' }) }
+      }
+      const item = { id: randomUUID(), text, createdAt: new Date().toISOString() }
+      await client.send(new PutCommand({ TableName: TABLE_NAME, Item: item }))
+      return { statusCode: 201, headers, body: JSON.stringify(item) }
+    }
+
+    return { statusCode: 404, headers, body: JSON.stringify({ error: 'Not found' }) }
+  } catch (err) {
+    console.error(err)
+    return { statusCode: 500, headers, body: JSON.stringify({ error: 'Internal server error' }) }
+  }
+}

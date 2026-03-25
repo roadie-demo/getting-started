@@ -1,0 +1,81 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ values.awsDeployRoleArn }}
+          aws-region: ${{ values.awsRegion }}
+
+      # ── Terraform ──────────────────────────────────────────────────────────
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: terraform
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
+        working-directory: terraform
+
+      - name: Get Terraform outputs
+        id: tf
+        run: |
+          echo "bucket=$(terraform output -raw s3_bucket)" >> "$GITHUB_OUTPUT"
+          echo "distribution=$(terraform output -raw cloudfront_distribution_id)" >> "$GITHUB_OUTPUT"
+        working-directory: terraform
+
+      # ── Frontend ───────────────────────────────────────────────────────────
+
+      - name: Install dependencies
+        run: npm ci --registry=https://registry.npmjs.org/
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Sync to S3
+        run: |
+          aws s3 sync out/ {% raw %}s3://${{ steps.tf.outputs.bucket }}{% endraw %} --delete
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id {% raw %}${{ steps.tf.outputs.distribution }}{% endraw %} \
+            --paths "/*"
+
+      # ── Lambda ─────────────────────────────────────────────────────────────
+
+      - name: Deploy Lambda
+        run: |
+          cd lambda
+          zip -j index.zip index.mjs
+          aws lambda update-function-code \
+            --function-name ${{ values.appName | replace(" ", "-") | lower }}-api \
+            --zip-file fileb://index.zip

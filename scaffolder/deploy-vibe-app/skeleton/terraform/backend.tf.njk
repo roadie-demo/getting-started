@@ -1,0 +1,7 @@
+terraform {
+  backend "s3" {
+    bucket = "${{ values.tfStateBucket }}"
+    key    = "${{ values.appName | replace(" ", "-") | lower }}/terraform.tfstate"
+    region = "${{ values.awsRegion }}"
+  }
+}

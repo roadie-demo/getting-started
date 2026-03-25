@@ -1,0 +1,156 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: deploy-vibe-app
+  title: Deploy Vibe App
+  description: Full-stack Next.js app (App Router, static export) on CloudFront/S3, with Lambda + API Gateway backend, DynamoDB, Terraform infra, and GitHub Actions CI/CD.
+  tags:
+    - nextjs
+    - react
+    - typescript
+    - lambda
+    - terraform
+    - aws
+    - cloudfront
+spec:
+  owner: group:default/engineering
+  type: website
+
+  parameters:
+    - title: App Details
+      required:
+        - appName
+        - description
+        - owner
+      properties:
+        repoHost:
+          type: string
+          default: github.com
+          ui:widget: hidden
+        gitHubOrg:
+          type: string
+          default: RoadieHQ  # TODO: change to your GitHub org
+          ui:widget: hidden
+        appName:
+          title: App Name
+          type: string
+          description: The name of your app. Spaces will be converted to hyphens and lowercased.
+          ui:autofocus: true
+        description:
+          title: Description
+          type: string
+          description: Short description of what this app does
+        owner:
+          title: Owner
+          type: string
+          description: Team that owns this service
+          ui:field: OwnerPicker
+          ui:options:
+            catalogFilter:
+              kind: Group
+
+    - title: AWS Configuration
+      required:
+        - awsRegion
+        - awsDeployRoleArn
+      properties:
+        awsDeployRoleArn:
+          title: AWS Deploy Role ARN
+          type: string
+          description: IAM role ARN that GitHub Actions will assume to deploy resources
+          pattern: '^arn:aws:iam::\d{12}:role/.+$'
+          ui:placeholder: 'arn:aws:iam::123456789012:role/deploy-role'
+          ui:help: 'The role must trust GitHub Actions OIDC (token.actions.githubusercontent.com)'
+        awsRegion:
+          title: AWS Region
+          type: string
+          default: eu-west-1
+          enum:
+            - us-east-1
+            - us-west-2
+            - eu-west-1
+          enumNames:
+            - 'US East (N. Virginia)'
+            - 'US West (Oregon)'
+            - 'EU (Ireland)'
+        tableName:
+          title: DynamoDB Table Name
+          type: string
+          description: Leave blank to use "<app-name>-items"
+          ui:placeholder: '{{ appName }}-items'
+        tfStateBucket:
+          title: Terraform State S3 Bucket
+          type: string
+          description: S3 bucket for storing Terraform state
+
+    - title: Options
+      properties:
+        enableTechDocs:
+          title: Enable TechDocs
+          type: boolean
+          default: true
+          description: Generate a MkDocs site for this service
+        repoVisibility:
+          title: Repository Visibility
+          type: string
+          default: private
+          enum:
+            - private
+            - public
+          enumNames:
+            - Private
+            - Public
+
+  steps:
+    - id: fetch-skeleton
+      name: Fetch skeleton
+      action: fetch:template
+      input:
+        url: ./skeleton
+        templateFileExtension: true
+        values:
+          repoHost: ${{ parameters.repoHost }}
+          gitHubOrg: ${{ parameters.gitHubOrg }}
+          appName: ${{ parameters.appName }}
+          description: ${{ parameters.description }}
+          owner: ${{ parameters.owner }}
+          awsRegion: ${{ parameters.awsRegion }}
+          tableName: ${{ parameters.tableName if parameters.tableName else (parameters.appName | replace(" ", "-") | lower) + '-items' }}
+          tfStateBucket: ${{ parameters.tfStateBucket }}
+          repoVisibility: ${{ parameters.repoVisibility }}
+          awsDeployRoleArn: ${{ parameters.awsDeployRoleArn }}
+
+    - id: fetch-techdocs
+      name: Fetch TechDocs
+      if: ${{ parameters.enableTechDocs }}
+      action: fetch:template
+      input:
+        url: ./techDocs
+        targetPath: .
+        templateFileExtension: true
+        values:
+          appName: ${{ parameters.appName }}
+          description: ${{ parameters.description }}
+
+    - id: publish-repo
+      name: Publish to GitHub
+      action: publish:github
+      input:
+        description: ${{ parameters.description }}
+        repoUrl: ${{ parameters.repoHost }}?owner=${{ parameters.gitHubOrg }}&repo=${{ parameters.appName | replace(" ", "-") | lower }}
+        repoVisibility: ${{ parameters.repoVisibility }}
+        defaultBranch: main
+
+    - id: register-catalog
+      name: Register in Catalog
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps['publish-repo'].output.repoContentsUrl }}
+        catalogInfoPath: /catalog-info.yaml
+
+  output:
+    links:
+      - title: View Repository on GitHub
+        url: ${{ steps['publish-repo'].output.remoteUrl }}
+      - title: View in Software Catalog
+        url: ${{ steps['register-catalog'].output.entityRef }}
