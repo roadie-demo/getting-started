@@ -29,7 +29,7 @@ spec:
           ui:widget: hidden
         gitHubOrg:
           type: string
-          default: RoadieHQ  # TODO: change to your GitHub org
+          default: roadie-demo  # TODO: change to your GitHub org
           ui:widget: hidden
         appName:
           title: App Name
